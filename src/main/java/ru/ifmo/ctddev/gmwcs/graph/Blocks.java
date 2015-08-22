@@ -13,6 +13,9 @@ public class Blocks {
     private Set<Set<Node>> components;
     private Set<Node> cutpoints;
     private Node root;
+    private Map<Node, List<Set<Node>>> intersection;
+    private Map<Node, Set<Node>> componentOf;
+    private Map<Set<Node>, Set<Node>> cpsOf;
     private int rootChildren;
     private int time;
 
@@ -30,6 +33,44 @@ public class Blocks {
             Set<Node> component = new LinkedHashSet<>();
             component.add(root);
             components.add(component);
+        }
+        postProcessing();
+    }
+
+    public Set<Node> componentOf(Node node) {
+        return componentOf.get(node);
+    }
+
+    public Set<Node> cutpointsOf(Set<Node> component) {
+        return cpsOf.containsKey(component) ? cpsOf.get(component) : Collections.emptySet();
+    }
+
+    public List<Set<Node>> incidentBlocks(Node cp) {
+        return intersection.get(cp);
+    }
+
+    private void postProcessing() {
+        cpsOf = new HashMap<>();
+        componentOf = new HashMap<>();
+        intersection = new HashMap<>();
+        for (Set<Node> component : components) {
+            for (Node cp : cutpoints) {
+                if (component.contains(cp)) {
+                    if (!intersection.containsKey(cp)) {
+                        intersection.put(cp, new ArrayList<>());
+                    }
+                    intersection.get(cp).add(component);
+                    if (!cpsOf.containsKey(component)) {
+                        cpsOf.put(component, new HashSet<>());
+                    }
+                    cpsOf.get(component).add(cp);
+                }
+            }
+        }
+        for (Set<Node> component : components()) {
+            for (Node node : component) {
+                componentOf.put(node, component);
+            }
         }
     }
 

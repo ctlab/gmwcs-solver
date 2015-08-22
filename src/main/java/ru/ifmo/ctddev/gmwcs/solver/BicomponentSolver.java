@@ -37,7 +37,7 @@ public class BicomponentSolver {
     }
 
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph) throws SolverException {
-        solver.setMinimum(-Double.MAX_VALUE);
+        solver.setLB(-Double.MAX_VALUE);
         if (graph.vertexSet().size() == 0) {
             return null;
         }
@@ -46,7 +46,7 @@ public class BicomponentSolver {
         double duration = (System.currentTimeMillis() - timeBefore) / 1000.0;
         System.out.println("Graph decomposing takes " + duration + " seconds.");
         List<Unit> bestBiggest = solveBiggest(graph, decomposition);
-        solver.setMinimum(Utils.sum(bestBiggest));
+        solver.setLB(Utils.sum(bestBiggest));
         List<Unit> bestUnrooted = solveUnrooted(graph, decomposition);
         List<Unit> best = Utils.sum(bestBiggest) > Utils.sum(bestUnrooted) ? bestBiggest : bestUnrooted;
         if (Utils.sum(best) < 0) {
@@ -82,7 +82,7 @@ public class BicomponentSolver {
             oldCutpoints.put(p.second, clone(p.second));
         }
         solver.setRoot(root);
-        List<Unit> rootedRes = solve("solving rooted parts", tree, rooted);
+        List<Unit> rootedRes = solve(tree, rooted);
         solver.setRoot(null);
         UndirectedGraph<Node, Edge> main = Utils.subgraph(graph, decomposition.getBiggestComponent());
         if (rootedRes != null) {
@@ -92,7 +92,7 @@ public class BicomponentSolver {
                 cutpoint.setWeight(cutpoint.getWeight() + unit.getWeight());
             });
         }
-        List<Unit> result = solve("solving biggest bicomponent", main, biggest);
+        List<Unit> result = solve(main, biggest);
         repairCutpoints(oldCutpoints, result);
         return result;
     }
@@ -144,16 +144,12 @@ public class BicomponentSolver {
     private List<Unit> solveUnrooted(UndirectedGraph<Node, Edge> graph, Decomposition decomposition) throws SolverException {
         Set<Node> union = new LinkedHashSet<>();
         decomposition.getUnrootedComponents().forEach(union::addAll);
-        return solve("solving unrooted parts", Utils.subgraph(graph, union), unrooted);
+        return solve(Utils.subgraph(graph, union), unrooted);
     }
 
-    private List<Unit> solve(String desc, UndirectedGraph<Node, Edge> graph, TimeLimit tl) throws SolverException {
-        solver.setTimeOut(tl.getRemainingTime());
-        long timeBefore = System.currentTimeMillis();
+    private List<Unit> solve(UndirectedGraph<Node, Edge> graph, TimeLimit tl) throws SolverException {
+        solver.setTimeLimit(tl);
         List<Unit> result = solver.solve(graph);
-        double duration = (System.currentTimeMillis() - timeBefore) / 1000.0;
-        tl.spend(Math.min(duration, tl.getRemainingTime()));
-        System.out.println("Operation '" + desc + "' has done. It takes " + duration + " seconds.");
         return result;
     }
 }

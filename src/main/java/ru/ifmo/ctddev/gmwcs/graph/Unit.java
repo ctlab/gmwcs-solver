@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public abstract class Unit {
+public abstract class Unit implements Comparable<Unit> {
     protected int num;
     protected double weight;
     protected Set<Unit> absorbed;
@@ -55,5 +55,13 @@ public abstract class Unit {
     @Override
     public boolean equals(Object o) {
         return (o.getClass() == getClass() && num == ((Unit) o).num);
+    }
+
+    @Override
+    public int compareTo(Unit u) {
+        if (u.weight != weight) {
+            return Double.compare(u.weight, weight);
+        }
+        return Integer.compare(u.getNum(), num);
     }
 }

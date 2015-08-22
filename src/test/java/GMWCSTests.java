@@ -10,6 +10,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
+import ru.ifmo.ctddev.gmwcs.solver.Utils;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -115,25 +116,20 @@ public class GMWCSTests {
             System.err.println("java.library.path must point to the directory containing the CPLEX shared library\n" +
                     "try invoking java with java -Djava.library.path=...");
             System.exit(1);
+        }
+        try {
+            if (Math.abs(sum(expected) - sum(actual)) > 0.1) {
+                System.err.println("Expected: " + sum(expected) + ", but actual: "
+                        + sum(actual));
+                Utils.toXdot(graph, expected, actual);
+                System.exit(1);
+            }
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
         } finally {
             System.setOut(nativeOut);
         }
-        Assert.assertEquals(num + "\n" + graphToString(graph), sum(expected), sum(actual), 0.1);
-    }
-
-    private String graphToString(UndirectedGraph<Node, Edge> graph) {
-        String result = graph.vertexSet().size() + " " + graph.edgeSet().size() + "\n";
-        result += "Nodes: \n";
-        for (Node node : graph.vertexSet()) {
-            result += node.getNum() + " " + node.getWeight() + "\n";
-        }
-        result += "Edges: \n";
-        for (Edge edge : graph.edgeSet()) {
-            Node from = graph.getEdgeSource(edge);
-            Node to = graph.getEdgeTarget(edge);
-            result += from.getNum() + " " + to.getNum() + " " + edge.getWeight() + "\n";
-        }
-        return result;
     }
 
     private void makeConnectedGraphs() {
