@@ -31,7 +31,6 @@ public class Main {
                 .withRequiredArg().ofType(Double.class).defaultsTo(1.0 / 3.0);
         optionParser.acceptsAll(asList("r", "rooted"), "Maximum share of time allocated for solving rooted parts")
                 .withRequiredArg().ofType(Double.class).defaultsTo(1.0 / 3.0);
-        optionParser.acceptsAll(asList("b", "break"), "Break symmetries");
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
             System.exit(0);
@@ -73,7 +72,7 @@ public class Main {
         int threadsNum = (Integer) optionSet.valueOf("threads");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
-        RLTSolver rltSolver = new RLTSolver(optionSet.has("b"));
+        RLTSolver rltSolver = new RLTSolver();
         rltSolver.setThreadsNum(threadsNum);
         BicomponentSolver solver = new BicomponentSolver(rltSolver);
         solver.setUnrootedTL(tl);

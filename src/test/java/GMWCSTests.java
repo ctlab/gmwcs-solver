@@ -36,7 +36,7 @@ public class GMWCSTests {
 
     public GMWCSTests() {
         random = new Random(SEED);
-        solver = new BicomponentSolver(new RLTSolver(false));
+        solver = new BicomponentSolver(new RLTSolver());
         tests = new ArrayList<>();
         nativeOut = System.out;
         nullOut = new PrintStream(new OutputStream() {

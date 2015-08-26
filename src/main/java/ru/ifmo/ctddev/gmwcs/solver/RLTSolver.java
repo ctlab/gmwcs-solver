@@ -31,17 +31,13 @@ public class RLTSolver implements Solver {
     private Map<Node, IloNumVar> x0;
     private TimeLimit tl;
     private int threads;
-    private double tuningTime;
-    private double probingTime;
     private boolean suppressOutput;
     private UndirectedGraph<Node, Edge> graph;
     private double minimum;
-    private boolean toBreak;
     private Node root;
     private SolutionCallback solutionCallback;
 
-    public RLTSolver(boolean toBreak) {
-        this.toBreak = toBreak;
+    public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
         this.minimum = -Double.MAX_VALUE;
@@ -58,14 +54,6 @@ public class RLTSolver implements Solver {
         this.threads = threads;
     }
 
-    public void setTuningTime(double time) {
-        tuningTime = time;
-    }
-
-    public void setProbingTime(double time) {
-        probingTime = time;
-    }
-
     public void setRoot(Node root) {
         this.root = root;
     }
@@ -79,10 +67,9 @@ public class RLTSolver implements Solver {
             addConstraints(graph);
             addObjective(graph);
             long timeBefore = System.currentTimeMillis();
-            if (toBreak && root == null) {
+            if (root == null) {
                 breakSymmetry(cplex, graph);
-            }
-            if (root != null) {
+            } else {
                 tighten();
             }
             tuning(cplex);
@@ -217,14 +204,6 @@ public class RLTSolver implements Solver {
         cplex.setParam(IloCplex.IntParam.Threads, threads);
         cplex.setParam(IloCplex.IntParam.ParallelMode, -1);
         cplex.setParam(IloCplex.IntParam.MIPOrdType, 3);
-        if (tuningTime > 0.0) {
-            cplex.setParam(IloCplex.DoubleParam.TuningTiLim, tuningTime);
-            cplex.tuneParam();
-        }
-        if (probingTime > 0.0) {
-            cplex.setParam(IloCplex.DoubleParam.ProbeTime, probingTime);
-            cplex.setParam(IloCplex.IntParam.Probe, 3);
-        }
         if (tl.getRemainingTime() <= 0) {
             cplex.setParam(IloCplex.DoubleParam.TiLim, EPS);
         } else if (tl.getRemainingTime() != Double.POSITIVE_INFINITY) {
