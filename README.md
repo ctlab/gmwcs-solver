@@ -23,6 +23,6 @@ Running
 
 To run program you should set jvm parameter java.library.path to directory of CPLEX binaries like that:
 
-    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1251/cplex/bin/x86-64_sles10_4.1/ -jar nosignal.jar
+    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1251/cplex/bin/x86-64_sles10_4.1/ -jar gmwcs.jar
 
 See more help by using flag -h.

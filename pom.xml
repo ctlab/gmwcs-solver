@@ -21,7 +21,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.5.3</version>
                 <configuration>
-                    <finalName>nosignal</finalName>
+                    <finalName>gmwcs</finalName>
                     <archive>
                         <manifest>
                             <mainClass>ru.ifmo.ctddev.gmwcs.Main</mainClass>
