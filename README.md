@@ -16,7 +16,7 @@ After that you can build the project using maven:
 
     mvn install
     
-And jar file with name "nosignal.jar" will appear in "target" directory
+And jar file with name "gmwcs.jar" will appear in "target" directory
     
 Running
 =======

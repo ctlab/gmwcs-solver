@@ -12,16 +12,20 @@ import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
 
-public class BicomponentSolver {
+public class BicomponentSolver implements Solver {
     private TimeLimit rooted;
     private TimeLimit biggest;
     private TimeLimit unrooted;
     private RLTSolver solver;
+    private boolean isSolvedToOptimality;
+    private double lb;
+    private boolean silence;
 
     public BicomponentSolver(RLTSolver solver) {
         rooted = new TimeLimit(Double.POSITIVE_INFINITY);
         unrooted = biggest = rooted;
         this.solver = solver;
+        lb = 0;
     }
 
     public void setRootedTL(TimeLimit tl) {
@@ -37,6 +41,7 @@ public class BicomponentSolver {
     }
 
     public List<Unit> solve(UndirectedGraph<Node, Edge> graph) throws SolverException {
+        isSolvedToOptimality = true;
         solver.setLB(-Double.MAX_VALUE);
         if (graph.vertexSet().size() == 0) {
             return null;
@@ -44,15 +49,39 @@ public class BicomponentSolver {
         long timeBefore = System.currentTimeMillis();
         Decomposition decomposition = new Decomposition(graph);
         double duration = (System.currentTimeMillis() - timeBefore) / 1000.0;
-        System.out.println("Graph decomposing takes " + duration + " seconds.");
+        if (!silence) {
+            System.out.println("Graph decomposing takes " + duration + " seconds.");
+        }
         List<Unit> bestBiggest = solveBiggest(graph, decomposition);
         solver.setLB(Utils.sum(bestBiggest));
         List<Unit> bestUnrooted = solveUnrooted(graph, decomposition);
         List<Unit> best = Utils.sum(bestBiggest) > Utils.sum(bestUnrooted) ? bestBiggest : bestUnrooted;
+        solver.setLB(-Double.MAX_VALUE);
         if (Utils.sum(best) < 0) {
             return null;
         }
         return best;
+    }
+
+    @Override
+    public void setTimeLimit(TimeLimit tl) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isSolvedToOptimality() {
+        return isSolvedToOptimality;
+    }
+
+    @Override
+    public void suppressOutput() {
+        solver.suppressOutput();
+        silence = true;
+    }
+
+    @Override
+    public void setLB(double lb) {
+        this.lb = lb;
     }
 
     private Node getRoot(UndirectedGraph<Node, Edge> graph) {
@@ -92,6 +121,7 @@ public class BicomponentSolver {
                 cutpoint.setWeight(cutpoint.getWeight() + unit.getWeight());
             });
         }
+        solver.setLB(lb);
         List<Unit> result = solve(main, biggest);
         repairCutpoints(oldCutpoints, result);
         return result;
@@ -150,6 +180,9 @@ public class BicomponentSolver {
     private List<Unit> solve(UndirectedGraph<Node, Edge> graph, TimeLimit tl) throws SolverException {
         solver.setTimeLimit(tl);
         List<Unit> result = solver.solve(graph);
+        if (!solver.isSolvedToOptimality()) {
+            isSolvedToOptimality = false;
+        }
         return result;
     }
 }

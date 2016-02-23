@@ -13,37 +13,24 @@ import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 import ru.ifmo.ctddev.gmwcs.solver.Utils;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GMWCSTests {
     public static final int SEED = 20140503;
     public static final int TESTS_PER_SIZE = 300;
     public static final int MAX_SIZE = 16;
-    public static final int RANDOM_TESTS = 1000;
+    public static final int RANDOM_TESTS = 2200;
     public static final Integer DEBUG_TEST = null;
-    private PrintStream nativeOut;
-    private PrintStream nullOut;
-    private List<UndirectedGraph<Node, Edge>> tests;
+    private List<TestCase> tests;
     private BicomponentSolver solver;
     private ReferenceSolver referenceSolver;
     private Random random;
 
     public GMWCSTests() {
         random = new Random(SEED);
-        solver = new BicomponentSolver(new RLTSolver());
+        this.solver = new BicomponentSolver(new RLTSolver());
         tests = new ArrayList<>();
-        nativeOut = System.out;
-        nullOut = new PrintStream(new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {
-            }
-        });
         referenceSolver = new ReferenceSolver();
         if (System.getProperty("skipTests") != null) {
             System.exit(0);
@@ -58,7 +45,10 @@ public class GMWCSTests {
             return;
         }
         UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
-        Assert.assertNull(solver.solve(graph));
+        List<Unit> res = solver.solve(graph);
+        if (!(res == null || res.isEmpty())) {
+            Assert.assertTrue(false);
+        }
     }
 
     @Test
@@ -72,9 +62,10 @@ public class GMWCSTests {
             }
         } else {
             for (int i = 0; i < allTests; i++) {
-                UndirectedGraph<Node, Edge> test = tests.get(i);
+                TestCase test = tests.get(i);
                 System.out.print("\rTest(connected) no. " + (i + 1) + "/" + tests.size());
-                System.out.print(": n = " + test.vertexSet().size() + ", m = " + test.edgeSet().size() + "       ");
+                System.out.print(": n = " + test.n() + ", m = " + test.m() + "       ");
+                System.out.flush();
                 check(test, i);
             }
         }
@@ -92,23 +83,23 @@ public class GMWCSTests {
             }
         } else {
             for (int i = allTests; i < tests.size(); i++) {
-                UndirectedGraph<Node, Edge> test = tests.get(i);
+                TestCase test = tests.get(i);
                 System.out.print("\rTest(random) no. " + (i) + "/" + tests.size());
-                System.out.print(": n = " + test.vertexSet().size() + ", m = " + test.edgeSet().size() + "       ");
+                System.out.print(": n = " + test.n() + ", m = " + test.m() + "       ");
+                System.out.flush();
                 check(test, i);
             }
         }
         System.out.println();
     }
 
-    private void check(UndirectedGraph<Node, Edge> graph, int num) {
-        List<Unit> expected = referenceSolver.solve(graph, Collections.<Node>emptyList());
+    private void check(TestCase test, int num) {
+        List<Unit> expected = referenceSolver.solve(test.graph(), Collections.emptyList());
         List<Unit> actual = null;
         try {
-            System.setOut(nullOut);
-            actual = solver.solve(graph);
+            solver.suppressOutput();
+            actual = solver.solve(test.graph());
         } catch (SolverException e) {
-            System.setOut(nativeOut);
             System.out.println();
             Assert.assertTrue(num + "\n" + e.getMessage(), false);
         } catch (UnsatisfiedLinkError e) {
@@ -121,14 +112,12 @@ public class GMWCSTests {
             if (Math.abs(sum(expected) - sum(actual)) > 0.1) {
                 System.err.println("Expected: " + sum(expected) + ", but actual: "
                         + sum(actual));
-                Utils.toXdot(graph, expected, actual);
+                Utils.toXdot(test.graph(), expected, actual);
                 System.exit(1);
             }
         } catch (IOException e) {
             System.err.println(e.getMessage());
             System.exit(1);
-        } finally {
-            System.setOut(nativeOut);
         }
     }
 
@@ -157,8 +146,7 @@ public class GMWCSTests {
                     graph.addEdge(nodes[seq.get(j)], nodes[seq.get(j + 1)], new Edge(j + 1, random.nextInt(16) - 8));
                 }
                 fillEdgesRandomly(graph, count, nodes, size);
-                tests.add(graph);
-
+                tests.add(new TestCase(graph));
             }
         }
     }
@@ -170,7 +158,7 @@ public class GMWCSTests {
             UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
             Node[] nodes = fillNodes(graph, n);
             fillEdgesRandomly(graph, m, nodes, 1);
-            tests.add(graph);
+            tests.add(new TestCase(graph));
         }
     }
 
@@ -196,14 +184,14 @@ public class GMWCSTests {
         }
     }
 
-    private double sum(List<Unit> units) {
+    private double sum(Collection<? extends Unit> units) {
         if (units == null) {
             return 0;
         }
-        double res = 0;
+        double result = 0;
         for (Unit unit : units) {
-            res += unit.getWeight();
+            result += unit.getWeight();
         }
-        return res;
+        return result;
     }
 }

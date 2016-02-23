@@ -13,6 +13,8 @@ public interface Solver {
 
     void setTimeLimit(TimeLimit tl);
 
+    boolean isSolvedToOptimality();
+
     void suppressOutput();
 
     void setLB(double lb);
