@@ -37,29 +37,20 @@ Sample
 
 Node file(node_name  node_weight):
 
-    1   7.0
-    2   40.0
-    3   15.0
-    4   8.0
-    5   7.0
-    6   7.0
+    1   -3.0
+    2   -5.0
+    3   0.0
+    4   2.0
+    5   1.0
 
 Edge file(edge_from edge_to edge_weight):
 
-    1   2   3.0
-    2   3   -20.0
-    2   4   -7
-    3   4   -20.0
-    4   6   -10.0
-    5   6   -2.0
-    1   5   -15.3
-
-Signal file:
-
-    2 -- 3  3 -- 4
-    1   5   6
-    
-Yellow vertices - vertex group, red edges - edge group.
+    1   2   4.0
+    1   3   7.0
+    2   3   5.0
+    3   4   1.0
+    4   5   -2.0
+    1   5   -1.5
 
 ![Sample](/sample.png?raw=true "Sample")
 
