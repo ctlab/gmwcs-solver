@@ -1,38 +1,38 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class Unit implements Comparable<Unit> {
     protected int num;
     protected double weight;
-    protected Set<Unit> absorbed;
+    protected List<Unit> absorbed;
 
     public Unit(int num, double weight) {
         this.num = num;
         this.weight = weight;
-        absorbed = new LinkedHashSet<>();
+        absorbed = new ArrayList<>();
     }
 
-    public Set<Unit> getAbsorbedUnits() {
-        return Collections.unmodifiableSet(absorbed);
-    }
-
-    public void addAbsorbedUnit(Unit unit) {
+    public void absorb(Unit unit){
+        for(Unit u : unit.getAbsorbed()){
+            absorbed.add(u);
+            weight += u.weight;
+        }
+        unit.clear();
         absorbed.add(unit);
+        weight += unit.weight;
     }
 
-    public void addAllAbsorbedUnits(Set<Unit> units) {
-        absorbed.addAll(units);
-    }
-
-    public void removeAbsorbedUnit(Unit unit) {
-        absorbed.remove(unit);
-    }
-
-    public void removeAllAbsorbedUnit() {
+    public void clear(){
+        for(Unit unit : absorbed){
+            weight -= unit.getWeight();
+        }
         absorbed.clear();
+    }
+
+    public List<Unit> getAbsorbed(){
+        return new ArrayList<>(absorbed);
     }
 
     @Override

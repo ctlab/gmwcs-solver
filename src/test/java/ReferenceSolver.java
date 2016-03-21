@@ -1,14 +1,14 @@
-import org.jgrapht.UndirectedGraph;
-import org.jgrapht.alg.ConnectivityInspector;
-import org.jgrapht.graph.UndirectedSubgraph;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
 
+import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
+
 public class ReferenceSolver {
-    public List<Unit> solve(UndirectedGraph<Node, Edge> graph, List<Node> roots) {
+    public List<Unit> solve(Graph graph, List<Node> roots) {
         for (Node root : roots) {
             if (!graph.containsVertex(root)) {
                 throw new IllegalArgumentException();
@@ -27,11 +27,8 @@ public class ReferenceSolver {
                 maxSet.add(node);
             }
         }
-        Edge[] edges = new Edge[graph.edgeSet().size()];
-        int m = 0;
-        for (Edge edge : graph.edgeSet()) {
-            edges[m++] = edge;
-        }
+        Edge[] edges = graph.edgeSet().stream().toArray(Edge[]::new);
+        int m = edges.length;
         for (int i = 0; i < (1 << m); i++) {
             Set<Edge> currEdges = new LinkedHashSet<>();
             for (int j = 0; j < m; j++) {
@@ -39,16 +36,16 @@ public class ReferenceSolver {
                     currEdges.add(edges[j]);
                 }
             }
-            UndirectedGraph<Node, Edge> subgraph = new UndirectedSubgraph<>(graph, graph.vertexSet(), currEdges);
-            ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(subgraph);
-            for (Set<Node> component : inspector.connectedSets()) {
+
+            Graph subgraph = graph.subgraph(graph.vertexSet(), currEdges);
+            for (Set<Node> component : subgraph.connectedSets()) {
                 if (component.size() == 1) {
                     subgraph.removeVertex(component.iterator().next());
                 }
             }
-            inspector = new ConnectivityInspector<>(subgraph);
-            if (inspector.connectedSets().size() == 1) {
-                Set<Node> res = inspector.connectedSets().iterator().next();
+            List<Set<Node>> connectedSets = subgraph.connectedSets();
+            if (connectedSets.size() == 1) {
+                Set<Node> res = connectedSets.iterator().next();
                 boolean containsRoots = true;
                 for (Node root : roots) {
                     if (!res.contains(root)) {
@@ -56,7 +53,7 @@ public class ReferenceSolver {
                         break;
                     }
                 }
-                double candidate = sum(res) + sum(currEdges);
+                double candidate = sum(new ArrayList<>(res)) + sum(new ArrayList<>(currEdges));
                 if (containsRoots && candidate > max) {
                     max = candidate;
                     maxSet = new ArrayList<>();
@@ -66,13 +63,5 @@ public class ReferenceSolver {
             }
         }
         return maxSet;
-    }
-
-    private double sum(Collection<? extends Unit> units) {
-        double result = 0;
-        for (Unit unit : units) {
-            result += unit.getWeight();
-        }
-        return result;
     }
 }

@@ -1,15 +1,13 @@
-import org.jgrapht.UndirectedGraph;
-import ru.ifmo.ctddev.gmwcs.graph.Edge;
-import ru.ifmo.ctddev.gmwcs.graph.Node;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
 
 public class TestCase {
-    private UndirectedGraph<Node, Edge> graph;
+    private Graph graph;
 
-    public TestCase(UndirectedGraph<Node, Edge> graph) {
+    public TestCase(Graph graph) {
         this.graph = graph;
     }
 
-    public UndirectedGraph<Node, Edge> graph() {
+    public Graph graph() {
         return graph;
     }
 

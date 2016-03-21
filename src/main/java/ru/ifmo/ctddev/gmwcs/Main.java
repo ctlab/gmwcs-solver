@@ -2,7 +2,6 @@ package ru.ifmo.ctddev.gmwcs;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.graph.*;
 import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
@@ -81,7 +80,7 @@ public class Main {
         GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {
-            UndirectedGraph<Node, Edge> graph = graphIO.read();
+            Graph graph = graphIO.read();
             List<Unit> units = solver.solve(graph);
             graphIO.write(units);
         } catch (ParseException e) {

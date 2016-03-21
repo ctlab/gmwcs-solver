@@ -1,7 +1,5 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
-import org.jgrapht.UndirectedGraph;
-import org.jgrapht.graph.SimpleGraph;
 import ru.ifmo.ctddev.gmwcs.Pair;
 
 import java.io.*;
@@ -30,17 +28,17 @@ public class SimpleIO implements GraphIO {
     }
 
     @Override
-    public UndirectedGraph<Node, Edge> read() throws FileNotFoundException, ParseException {
+    public Graph read() throws FileNotFoundException, ParseException {
         try (Scanner nodes = new Scanner(new BufferedReader(new FileReader(nodeIn)));
              Scanner edges = new Scanner(new BufferedReader(new FileReader(edgeIn)))) {
-            UndirectedGraph<Node, Edge> graph = new SimpleGraph<>(Edge.class);
+            Graph graph = new Graph();
             parseNodes(nodes, graph);
             parseEdges(edges, graph);
             return graph;
         }
     }
 
-    private void parseNodes(Scanner nodes, UndirectedGraph<Node, Edge> graph) throws ParseException {
+    private void parseNodes(Scanner nodes, Graph graph) throws ParseException {
         int lnum = 0;
         while (nodes.hasNextLine()) {
             lnum++;
@@ -70,7 +68,7 @@ public class SimpleIO implements GraphIO {
         }
     }
 
-    private void parseEdges(Scanner edges, UndirectedGraph<Node, Edge> graph) throws ParseException {
+    private void parseEdges(Scanner edges, Graph graph) throws ParseException {
         int lnum = 0;
         while (edges.hasNextLine()) {
             lnum++;

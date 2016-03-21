@@ -3,14 +3,12 @@ package ru.ifmo.ctddev.gmwcs.solver;
 import ilog.concert.IloException;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
-import org.jgrapht.UndirectedGraph;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
 import java.util.*;
-
-import static ru.ifmo.ctddev.gmwcs.solver.RLTSolver.getVars;
 
 public class Separator extends IloCplex.UserCutCallback {
     public static final double ADDITION_CAPACITY = 1e-6;
@@ -26,12 +24,12 @@ public class Separator extends IloCplex.UserCutCallback {
     private Map<Edge, IloNumVar> w;
     private int waited;
     private double period;
-    private UndirectedGraph<Node, Edge> graph;
+    private Graph graph;
     private boolean inited;
     private Map<Unit, Integer> indices;
     private IloNumVar[] vars;
 
-    public Separator(Map<Node, IloNumVar> y, Map<Edge, IloNumVar> w, IloCplex cplex, UndirectedGraph<Node, Edge> graph) {
+    public Separator(Map<Node, IloNumVar> y, Map<Edge, IloNumVar> w, IloCplex cplex, Graph graph) {
         this.y = y;
         this.w = w;
         generators = new HashMap<>();
@@ -64,7 +62,7 @@ public class Separator extends IloCplex.UserCutCallback {
     public Separator clone() {
         Separator result = new Separator(y, w, cplex, graph);
         for (CutGenerator generator : generatorList) {
-            result.addComponent(Utils.subgraph(graph, generator.getNodes()), generator.getRoot());
+            result.addComponent(graph.subgraph(generator.getNodes()), generator.getRoot());
         }
         return result;
     }
@@ -85,7 +83,8 @@ public class Separator extends IloCplex.UserCutCallback {
                 Set<Edge> minCut = new HashSet<>();
                 minCut.addAll(cut);
                 synchronized (cplex) {
-                    add(cplex.le(cplex.diff(y.get(node), cplex.sum(getVars(minCut, w))), 0));
+                    IloNumVar[] evars = minCut.stream().map(x -> w.get(x)).toArray(IloNumVar[]::new);
+                    add(cplex.le(cplex.diff(y.get(node), cplex.sum(evars)), 0));
                 }
                 added++;
             }
@@ -101,8 +100,17 @@ public class Separator extends IloCplex.UserCutCallback {
         }
         double[] values = getValues(vars);
         for (CutGenerator generator : generatorList) {
+            Set<Edge> visited = new HashSet<>();
             for (Edge edge : generator.getEdges()) {
-                generator.setCapacity(edge, values[indices.get(edge)] + ADDITION_CAPACITY);
+                if (visited.contains(edge)) {
+                    continue;
+                }
+                double weight = 0;
+                for (Edge e : graph.getAllEdges(graph.getEdgeSource(edge), graph.getEdgeTarget(edge))) {
+                    weight += values[indices.get(e)];
+                    visited.add(e);
+                }
+                generator.setCapacity(edge, weight + ADDITION_CAPACITY);
             }
             for (Node node : generator.getNodes()) {
                 generator.setVertexCapacity(node, values[indices.get(node)] - EPS);
@@ -125,7 +133,7 @@ public class Separator extends IloCplex.UserCutCallback {
         }
     }
 
-    public void addComponent(UndirectedGraph<Node, Edge> graph, Node root) {
+    public void addComponent(Graph graph, Node root) {
         CutGenerator generator = new CutGenerator(graph, root);
         generatorList.add(generator);
         for (Node node : generator.getNodes()) {
