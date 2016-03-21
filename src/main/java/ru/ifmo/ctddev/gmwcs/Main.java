@@ -2,7 +2,10 @@ package ru.ifmo.ctddev.gmwcs;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import ru.ifmo.ctddev.gmwcs.graph.*;
+import ru.ifmo.ctddev.gmwcs.graph.Graph;
+import ru.ifmo.ctddev.gmwcs.graph.GraphIO;
+import ru.ifmo.ctddev.gmwcs.graph.SimpleIO;
+import ru.ifmo.ctddev.gmwcs.graph.Unit;
 import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;

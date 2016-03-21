@@ -193,6 +193,17 @@ public class Graph {
         return adj.containsKey(v);
     }
 
+    public void addGraph(Graph graph) {
+        for (Node v : graph.vertexSet()) {
+            addVertex(v);
+        }
+        for (Edge e : graph.edgeSet()) {
+            Node v = graph.getEdgeSource(e);
+            Node u = graph.getEdgeTarget(e);
+            addEdge(v, u, e);
+        }
+    }
+
     private static class LinksList implements Iterable<Link> {
         private List<Link> l;
 

@@ -1,10 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
-import org.jgrapht.Graphs;
-import org.jgrapht.UndirectedGraph;
-import org.jgrapht.alg.ConnectivityInspector;
 import ru.ifmo.ctddev.gmwcs.Pair;
-import ru.ifmo.ctddev.gmwcs.solver.Utils;
 
 import java.util.*;
 
@@ -12,19 +8,18 @@ public class Decomposition {
     private Set<Node> biggest;
     private List<Set<Node>> unrootedComponents;
     private List<Pair<Set<Node>, Node>> rootedComponents;
-    private UndirectedGraph<Node, Edge> graph;
+    private Graph graph;
 
-    public Decomposition(UndirectedGraph<Node, Edge> graph) {
+    public Decomposition(Graph graph) {
         this.graph = graph;
         unrootedComponents = new ArrayList<>();
         rootedComponents = new ArrayList<>();
-        ConnectivityInspector<Node, Edge> inspector = new ConnectivityInspector<>(graph);
-        List<Set<Node>> components = inspector.connectedSets();
+        List<Set<Node>> components = graph.connectedSets();
         Set<Node> bestComponent = null;
         Blocks partBest = null;
         int maxSize = 0;
         for (Set<Node> component : components) {
-            UndirectedGraph<Node, Edge> subgraph = Utils.subgraph(graph, component);
+            Graph subgraph = graph.subgraph(component);
             Blocks blocks = new Blocks(subgraph);
             Set<Set<Node>> bicomponents = blocks.components();
             for (Set<Node> bicomponent : bicomponents) {
@@ -71,7 +66,7 @@ public class Decomposition {
         if (!biggest.contains(v)) {
             comps.get(cp).add(v);
         }
-        for (Node u : Graphs.neighborListOf(graph, v)) {
+        for (Node u : graph.neighborListOf(v)) {
             if (visited.get(u) == null) {
                 dfs(u, cutpoints.contains(v) ? v : cp, cutpoints, visited, comps);
             }

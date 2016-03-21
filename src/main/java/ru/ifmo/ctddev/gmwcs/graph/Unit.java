@@ -14,8 +14,8 @@ public abstract class Unit implements Comparable<Unit> {
         absorbed = new ArrayList<>();
     }
 
-    public void absorb(Unit unit){
-        for(Unit u : unit.getAbsorbed()){
+    public void absorb(Unit unit) {
+        for (Unit u : unit.getAbsorbed()) {
             absorbed.add(u);
             weight += u.weight;
         }
@@ -24,14 +24,14 @@ public abstract class Unit implements Comparable<Unit> {
         weight += unit.weight;
     }
 
-    public void clear(){
-        for(Unit unit : absorbed){
+    public void clear() {
+        for (Unit unit : absorbed) {
             weight -= unit.getWeight();
         }
         absorbed.clear();
     }
 
-    public List<Unit> getAbsorbed(){
+    public List<Unit> getAbsorbed() {
         return new ArrayList<>(absorbed);
     }
 

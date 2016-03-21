@@ -11,20 +11,20 @@ import java.util.Set;
 
 public class Preprocessor {
     public static void preprocess(Graph graph) {
-        for(Edge edge : new ArrayList<>(graph.edgeSet())){
-            if(!graph.containsEdge(edge)){
+        for (Edge edge : new ArrayList<>(graph.edgeSet())) {
+            if (!graph.containsEdge(edge)) {
                 continue;
             }
             Node from = graph.getEdgeSource(edge);
             Node to = graph.getEdgeTarget(edge);
-            if(edge.getWeight() >= 0 && from.getWeight() >= 0 && to.getWeight() >= 0){
+            if (edge.getWeight() >= 0 && from.getWeight() >= 0 && to.getWeight() >= 0) {
                 merge(graph, edge, from, to);
             }
         }
         for (Node v : new ArrayList<>(graph.vertexSet())) {
-            if(v.getWeight() < 0 && graph.degreeOf(v) == 2){
+            if (v.getWeight() < 0 && graph.degreeOf(v) == 2) {
                 Edge[] edges = graph.edgesOf(v).stream().toArray(Edge[]::new);
-                if(edges[1].getWeight() > 0 || edges[0].getWeight() > 0){
+                if (edges[1].getWeight() > 0 || edges[0].getWeight() > 0) {
                     continue;
                 }
                 Node left = graph.getOppositeVertex(v, edges[0]);
@@ -44,19 +44,19 @@ public class Preprocessor {
     private static void merge(Graph graph, Unit... units) {
         Set<Node> nodes = new HashSet<>();
         Set<Edge> edges = new HashSet<>();
-        for(Unit unit : units){
-            if(unit instanceof Node){
+        for (Unit unit : units) {
+            if (unit instanceof Node) {
                 nodes.add((Node) unit);
             } else {
                 edges.add((Edge) unit);
             }
         }
-        for(Edge e : edges){
-            if(!nodes.contains(graph.getEdgeSource(e)) || !nodes.contains(graph.getEdgeTarget(e))){
+        for (Edge e : edges) {
+            if (!nodes.contains(graph.getEdgeSource(e)) || !nodes.contains(graph.getEdgeTarget(e))) {
                 throw new IllegalArgumentException();
             }
         }
-        for(Edge e : edges){
+        for (Edge e : edges) {
             contract(graph, e);
         }
     }
@@ -66,11 +66,11 @@ public class Preprocessor {
         Node aux = graph.getEdgeTarget(e);
         Set<Edge> auxEdges = new HashSet<>(graph.edgesOf(aux));
         auxEdges.remove(e);
-        for(Edge a : auxEdges){
+        for (Edge a : auxEdges) {
             Node opposite = graph.getOppositeVertex(aux, a);
             Edge m = graph.getEdge(main, opposite);
             graph.removeEdge(a);
-            if(m == null){
+            if (m == null) {
                 if (opposite == main) {
                     if (a.getWeight() >= 0) {
                         main.absorb(a);
@@ -79,10 +79,10 @@ public class Preprocessor {
                 }
                 graph.addEdge(main, opposite, a);
             } else {
-                if(a.getWeight() >= 0 && m.getWeight() >= 0) {
+                if (a.getWeight() >= 0 && m.getWeight() >= 0) {
                     m.absorb(a);
                 } else {
-                    if(m.getWeight() < e.getWeight()){
+                    if (m.getWeight() < a.getWeight()) {
                         graph.removeEdge(m);
                         graph.addEdge(main, opposite, a);
                     }

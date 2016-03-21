@@ -180,7 +180,7 @@ public class GMWCSTests {
         for (int j = 0; j < count; j++) {
             int u = random.nextInt(size);
             int v = random.nextInt(size);
-            if (u == v) {
+            if (u == v || graph.getEdge(nodes[v], nodes[u]) != null) {
                 j--;
                 continue;
             }

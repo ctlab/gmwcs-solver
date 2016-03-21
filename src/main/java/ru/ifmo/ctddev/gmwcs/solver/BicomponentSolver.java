@@ -1,14 +1,8 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import org.jgrapht.Graphs;
-import org.jgrapht.UndirectedGraph;
-import org.jgrapht.graph.SimpleGraph;
 import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
-import ru.ifmo.ctddev.gmwcs.graph.Decomposition;
-import ru.ifmo.ctddev.gmwcs.graph.Edge;
-import ru.ifmo.ctddev.gmwcs.graph.Node;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
 
@@ -40,7 +34,14 @@ public class BicomponentSolver implements Solver {
         this.biggest = tl;
     }
 
-    public List<Unit> solve(UndirectedGraph<Node, Edge> graph) throws SolverException {
+    public List<Unit> solve(Graph graph) throws SolverException {
+        Graph g = graph;
+        graph = graph.subgraph(graph.vertexSet());
+        Preprocessor.preprocess(graph);
+        if (!silence) {
+            System.out.print("Preprocessing deleted " + (g.vertexSet().size() - graph.vertexSet().size()) + " nodes ");
+            System.out.println("and " + (g.edgeSet().size() - graph.edgeSet().size()) + " edges.");
+        }
         isSolvedToOptimality = true;
         solver.setLB(-Double.MAX_VALUE);
         if (graph.vertexSet().size() == 0) {
@@ -53,14 +54,26 @@ public class BicomponentSolver implements Solver {
             System.out.println("Graph decomposing takes " + duration + " seconds.");
         }
         List<Unit> bestBiggest = solveBiggest(graph, decomposition);
-        solver.setLB(Utils.sum(bestBiggest));
-        List<Unit> bestUnrooted = solveUnrooted(graph, decomposition);
+        List<Unit> bestUnrooted = extract(solveUnrooted(graph, decomposition));
+        graph.vertexSet().forEach(Node::clear);
+        graph.edgeSet().forEach(Edge::clear);
         List<Unit> best = Utils.sum(bestBiggest) > Utils.sum(bestUnrooted) ? bestBiggest : bestUnrooted;
         solver.setLB(-Double.MAX_VALUE);
         if (Utils.sum(best) < 0) {
             return null;
         }
         return best;
+    }
+
+    private List<Unit> extract(List<Unit> sol) {
+        List<Unit> res = new ArrayList<>();
+        for (Unit u : sol) {
+            for (Unit a : u.getAbsorbed()) {
+                res.add(a);
+            }
+            res.add(u);
+        }
+        return res;
     }
 
     @Override
@@ -84,18 +97,21 @@ public class BicomponentSolver implements Solver {
         this.lb = lb;
     }
 
-    private Node getRoot(UndirectedGraph<Node, Edge> graph) {
-        Set<Node> rootCandidate = new LinkedHashSet<>();
+    private Node getRoot(Graph graph) {
+        Set<Node> rootCandidates = new LinkedHashSet<>();
         for (int i = -1; i < graph.vertexSet().size(); i++) {
-            rootCandidate.add(new Node(i, 0.0));
+            rootCandidates.add(new Node(i, 0.0));
         }
-        rootCandidate.removeAll(graph.vertexSet());
-        return rootCandidate.iterator().next();
+        graph.vertexSet().stream().forEach(v -> rootCandidates.removeAll(v.getAbsorbed()));
+        rootCandidates.removeAll(graph.vertexSet());
+        return rootCandidates.iterator().next();
     }
 
-    private List<Unit> solveBiggest(UndirectedGraph<Node, Edge> graph, Decomposition decomposition) throws SolverException {
-        UndirectedGraph<Node, Edge> tree = new SimpleGraph<>(Edge.class);
-        Map<Node, Node> oldCutpoints = new LinkedHashMap<>();
+    private List<Unit> solveBiggest(Graph graph, Decomposition decomposition) throws SolverException {
+        Graph tree = new Graph();
+        Map<Unit, List<Unit>> history = new HashMap<>();
+        graph.vertexSet().forEach(v -> history.put(v, v.getAbsorbed()));
+        graph.edgeSet().forEach(e -> history.put(e, e.getAbsorbed()));
         Node root = getRoot(graph);
         tree.addVertex(root);
         Map<Unit, Node> itsCutpoints = new LinkedHashMap<>();
@@ -106,78 +122,57 @@ public class BicomponentSolver implements Solver {
                 }
                 itsCutpoints.put(node, p.second);
             }
-            Graphs.addGraph(tree, Utils.subgraph(graph, p.first));
+            tree.addGraph(graph.subgraph(p.first));
             addAsChild(tree, p.first, p.second, root);
-            oldCutpoints.put(p.second, clone(p.second));
         }
         solver.setRoot(root);
         List<Unit> rootedRes = solve(tree, rooted);
         solver.setRoot(null);
-        UndirectedGraph<Node, Edge> main = Utils.subgraph(graph, decomposition.getBiggestComponent());
+        Graph main = graph.subgraph(decomposition.getBiggestComponent());
         if (rootedRes != null) {
             rootedRes.stream().filter(unit -> unit != root).forEach(unit -> {
                 Node cutpoint = itsCutpoints.get(unit);
-                cutpoint.addAbsorbedUnit(unit);
-                cutpoint.setWeight(cutpoint.getWeight() + unit.getWeight());
+                cutpoint.absorb(unit);
             });
         }
         solver.setLB(lb);
-        List<Unit> result = solve(main, biggest);
-        repairCutpoints(oldCutpoints, result);
+        List<Unit> solution = solve(main, biggest);
+        List<Unit> result = new ArrayList<>();
+        result.addAll(solution);
+        solver.setLB(Utils.sum(result));
+        solution.stream().forEach(u -> result.addAll(u.getAbsorbed()));
+        repairCutpoints(history);
         return result;
     }
 
-    private void repairCutpoints(Map<Node, Node> oldCutpoints, List<Unit> result) {
-        Set<Node> includedCP = new LinkedHashSet<>();
-        if (result != null) {
-            for (Unit unit : result) {
-                if (oldCutpoints.keySet().contains(unit)) {
-                    includedCP.add((Node) unit);
-                }
-            }
-        }
-        for (Node cp : oldCutpoints.keySet()) {
-            boolean addToResult = includedCP.contains(cp);
-            Node old = oldCutpoints.get(cp);
-            cp.setWeight(old.getWeight());
-            Set<Unit> absorbed = new LinkedHashSet<>();
-            absorbed.addAll(cp.getAbsorbedUnits());
-            for (Unit unit : absorbed) {
-                if (!old.getAbsorbedUnits().contains(unit)) {
-                    if (addToResult) {
-                        result.add(unit);
-                    }
-                    cp.removeAbsorbedUnit(unit);
-                }
+    private void repairCutpoints(Map<Unit, List<Unit>> history) {
+        history.keySet().forEach(Unit::clear);
+        for (Unit u : history.keySet()) {
+            for (Unit a : history.get(u)) {
+                u.absorb(a);
             }
         }
     }
 
-    private Node clone(Node node) {
-        Node result = new Node(node.getNum(), node.getWeight());
-        result.addAllAbsorbedUnits(node.getAbsorbedUnits());
-        return result;
-    }
-
-    private void addAsChild(UndirectedGraph<Node, Edge> tree, Set<Node> component, Node cutpoint, Node root) {
-        for (Node neighbour : Graphs.neighborListOf(tree, cutpoint)) {
+    private void addAsChild(Graph tree, Set<Node> component, Node cp, Node root) {
+        for (Node neighbour : tree.neighborListOf(cp)) {
             if (!component.contains(neighbour)) {
                 continue;
             }
-            Edge edge = tree.getEdge(cutpoint, neighbour);
+            Edge edge = tree.getEdge(cp, neighbour);
             tree.removeEdge(edge);
             tree.addEdge(root, neighbour, edge);
         }
-        tree.removeVertex(cutpoint);
+        tree.removeVertex(cp);
     }
 
-    private List<Unit> solveUnrooted(UndirectedGraph<Node, Edge> graph, Decomposition decomposition) throws SolverException {
+    private List<Unit> solveUnrooted(Graph graph, Decomposition decomposition) throws SolverException {
         Set<Node> union = new LinkedHashSet<>();
         decomposition.getUnrootedComponents().forEach(union::addAll);
-        return solve(Utils.subgraph(graph, union), unrooted);
+        return solve(graph.subgraph(union), unrooted);
     }
 
-    private List<Unit> solve(UndirectedGraph<Node, Edge> graph, TimeLimit tl) throws SolverException {
+    private List<Unit> solve(Graph graph, TimeLimit tl) throws SolverException {
         solver.setTimeLimit(tl);
         List<Unit> result = solver.solve(graph);
         if (!solver.isSolvedToOptimality()) {
