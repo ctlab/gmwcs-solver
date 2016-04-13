@@ -17,7 +17,8 @@ public class Preprocessor {
             }
             Node from = graph.getEdgeSource(edge);
             Node to = graph.getEdgeTarget(edge);
-            if (edge.getWeight() >= 0 && from.getWeight() >= 0 && to.getWeight() >= 0) {
+            double ew = edge.getWeight();
+            if (ew >= 0 && ew + from.getWeight() >= 0 && ew + to.getWeight() >= 0) {
                 merge(graph, edge, from, to);
             }
         }
