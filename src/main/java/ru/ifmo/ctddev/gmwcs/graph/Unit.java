@@ -7,10 +7,12 @@ public abstract class Unit implements Comparable<Unit> {
     protected int num;
     protected double weight;
     protected List<Unit> absorbed;
+    protected boolean required;
 
-    public Unit(int num, double weight) {
+    public Unit(int num, double weight, boolean required) {
         this.num = num;
         this.weight = weight;
+        this.required = required;
         absorbed = new ArrayList<>();
     }
 
@@ -46,6 +48,14 @@ public abstract class Unit implements Comparable<Unit> {
 
     public double getWeight() {
         return weight;
+    }
+
+    public boolean isRequired(){
+        return required;
+    }
+
+    public void setRequired(boolean required){
+        this.required = required;
     }
 
     public void setWeight(double weight) {

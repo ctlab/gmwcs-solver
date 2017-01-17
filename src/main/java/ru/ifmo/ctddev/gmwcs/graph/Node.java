@@ -3,7 +3,7 @@ package ru.ifmo.ctddev.gmwcs.graph;
 public class Node extends Unit {
 
     public Node(int num, double weight) {
-        super(num, weight);
+        super(num, weight, false);
     }
 
     @Override

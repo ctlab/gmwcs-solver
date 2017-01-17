@@ -76,6 +76,10 @@ public class Main {
         int threadsNum = (Integer) optionSet.valueOf("threads");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
+        File compFile = null;
+        if(optionSet.has("c")){
+            compFile = new File((String)optionSet.valueOf("comp"));
+        }
         File solutionFile = new File((String) optionSet.valueOf("solution"));
         RLTSolver rltSolver = new RLTSolver();
         rltSolver.setThreadsNum(threadsNum);
@@ -83,7 +87,7 @@ public class Main {
         solver.setUnrootedTL(tl);
         solver.setRootedTL(biggestTL.subLimit(ush == 1.0 ? 0 : rsh / (1.0 - ush)));
         solver.setTLForBiggest(biggestTL);
-        GraphIO graphIO = new SimpleIO(nodeFile, solutionFile, edgeFile);
+        GraphIO graphIO = new SimpleIO(nodeFile, solutionFile, edgeFile, compFile);
         try {
             Graph graph = graphIO.read();
             List<Unit> units = solver.solve(graph);

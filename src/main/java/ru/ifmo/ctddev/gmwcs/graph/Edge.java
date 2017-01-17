@@ -2,7 +2,7 @@ package ru.ifmo.ctddev.gmwcs.graph;
 
 public class Edge extends Unit {
     public Edge(int num, double weight) {
-        super(num, weight);
+        super(num, weight, false);
     }
 
     @Override

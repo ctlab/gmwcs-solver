@@ -8,25 +8,44 @@ public class SimpleIO implements GraphIO {
     private File nodeIn;
     private File nodeOut;
     private File edgeIn;
+    private File compFile;
     private List<String> nodeList;
     private Map<String, Node> nodeMap;
 
-    public SimpleIO(File nodeIn, File nodeOut, File edgeIn) {
+    public SimpleIO(File nodeIn, File nodeOut, File edgeIn, File compFile) {
         this.nodeIn = nodeIn;
         this.edgeIn = edgeIn;
         this.nodeOut = nodeOut;
+        this.compFile = compFile;
         nodeMap = new LinkedHashMap<>();
         nodeList = new ArrayList<>();
     }
 
     @Override
     public Graph read() throws FileNotFoundException, ParseException {
+        Graph graph;
         try (Scanner nodes = new Scanner(new BufferedReader(new FileReader(nodeIn)));
              Scanner edges = new Scanner(new BufferedReader(new FileReader(edgeIn)))) {
-            Graph graph = new Graph();
+            graph = new Graph();
             parseNodes(nodes, graph);
             parseEdges(edges, graph);
-            return graph;
+        }
+        if(compFile != null){
+            try(Scanner comp = new Scanner(new BufferedReader(new FileReader(compFile)))){
+                parseRequirements(comp);
+            }
+        }
+        return graph;
+    }
+
+    private void parseRequirements(Scanner comp) throws ParseException {
+        int lnum = 0;
+        while(comp.hasNext()){
+            String vertex = comp.nextLine();
+            if(!nodeMap.containsKey(vertex)){
+                throw new ParseException("Compulsory file contains non-vertex " + vertex, lnum);
+            }
+            nodeMap.get(vertex).setRequired(true);
         }
     }
 
