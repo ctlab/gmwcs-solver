@@ -22,9 +22,11 @@ public class ReferenceSolver {
         // Isolated vertices
         for (Node node : graph.vertexSet()) {
             if ((roots.isEmpty() || (roots.size() == 1 && roots.get(0) == node)) && node.getWeight() > max) {
-                max = node.getWeight();
-                maxSet = new ArrayList<>();
-                maxSet.add(node);
+                if(graph.vertexSet().size() > 1) {
+                    max = node.getWeight();
+                    maxSet = new ArrayList<>();
+                    maxSet.add(node);
+                }
             }
         }
         Edge[] edges = graph.edgeSet().stream().toArray(Edge[]::new);
@@ -46,6 +48,9 @@ public class ReferenceSolver {
             List<Set<Node>> connectedSets = subgraph.connectedSets();
             if (connectedSets.size() == 1) {
                 Set<Node> res = connectedSets.iterator().next();
+                if(res.size() == graph.vertexSet().size()){
+                    continue;
+                }
                 boolean containsRoots = true;
                 for (Node root : roots) {
                     if (!res.contains(root)) {

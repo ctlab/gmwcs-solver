@@ -1,21 +1,21 @@
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 
-public class TestCase {
+class TestCase {
     private Graph graph;
 
-    public TestCase(Graph graph) {
+    TestCase(Graph graph) {
         this.graph = graph;
     }
 
-    public Graph graph() {
+    Graph graph() {
         return graph;
     }
 
-    public int n() {
+    int n() {
         return graph.vertexSet().size();
     }
 
-    public int m() {
+    int m() {
         return graph.edgeSet().size();
     }
 }

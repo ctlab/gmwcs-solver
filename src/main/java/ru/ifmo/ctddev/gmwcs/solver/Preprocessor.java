@@ -22,6 +22,7 @@ public class Preprocessor {
                 merge(graph, edge, from, to);
             }
         }
+
         for (Node v : new ArrayList<>(graph.vertexSet())) {
             if (v.getWeight() <= 0 && graph.degreeOf(v) == 2) {
                 Edge[] edges = graph.edgesOf(v).stream().toArray(Edge[]::new);

@@ -37,11 +37,11 @@ public class BicomponentSolver implements Solver {
     public List<Unit> solve(Graph graph) throws SolverException {
         Graph g = graph;
         graph = graph.subgraph(graph.vertexSet());
-        Preprocessor.preprocess(graph);
+        /*Preprocessor.preprocess(graph);
         if (!silence) {
             System.out.print("Preprocessing deleted " + (g.vertexSet().size() - graph.vertexSet().size()) + " nodes ");
             System.out.println("and " + (g.edgeSet().size() - graph.edgeSet().size()) + " edges.");
-        }
+        }*/
         isSolvedToOptimality = true;
         solver.setLB(-Double.MAX_VALUE);
         if (graph.vertexSet().size() == 0) {
@@ -53,15 +53,15 @@ public class BicomponentSolver implements Solver {
         if (!silence) {
             System.out.println("Graph decomposing takes " + duration + " seconds.");
         }
-        List<Unit> bestBiggest = solveBiggest(graph, decomposition);
+        //List<Unit> bestBiggest = solveBiggest(graph, decomposition);
         List<Unit> bestUnrooted = extract(solveUnrooted(graph, decomposition));
         graph.vertexSet().forEach(Node::clear);
         graph.edgeSet().forEach(Edge::clear);
-        List<Unit> best = Utils.sum(bestBiggest) > Utils.sum(bestUnrooted) ? bestBiggest : bestUnrooted;
+        List<Unit> best = bestUnrooted; //Utils.sum(bestBiggest) > Utils.sum(bestUnrooted) ? bestBiggest : bestUnrooted;
         solver.setLB(-Double.MAX_VALUE);
-        if (Utils.sum(best) < 0) {
+        /*if (Utils.sum(best) < 0) {
             return null;
-        }
+        }*/
         return best;
     }
 
@@ -102,7 +102,7 @@ public class BicomponentSolver implements Solver {
         for (int i = -1; i < graph.vertexSet().size(); i++) {
             rootCandidates.add(new Node(i, 0.0));
         }
-        graph.vertexSet().stream().forEach(v -> rootCandidates.removeAll(v.getAbsorbed()));
+        graph.vertexSet().forEach(v -> rootCandidates.removeAll(v.getAbsorbed()));
         rootCandidates.removeAll(graph.vertexSet());
         return rootCandidates.iterator().next();
     }
@@ -140,7 +140,7 @@ public class BicomponentSolver implements Solver {
         List<Unit> result = new ArrayList<>();
         result.addAll(solution);
         solver.setLB(Utils.sum(result));
-        solution.stream().forEach(u -> result.addAll(u.getAbsorbed()));
+        solution.forEach(u -> result.addAll(u.getAbsorbed()));
         repairCutpoints(history);
         return result;
     }
@@ -167,9 +167,9 @@ public class BicomponentSolver implements Solver {
     }
 
     private List<Unit> solveUnrooted(Graph graph, Decomposition decomposition) throws SolverException {
-        Set<Node> union = new LinkedHashSet<>();
-        decomposition.getUnrootedComponents().forEach(union::addAll);
-        return solve(graph.subgraph(union), unrooted);
+        /*Set<Node> union = new LinkedHashSet<>();
+        decomposition.getUnrootedComponents().forEach(union::addAll);*/
+        return solve(graph, unrooted);
     }
 
     private List<Unit> solve(Graph graph, TimeLimit tl) throws SolverException {

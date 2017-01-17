@@ -1,15 +1,13 @@
 package ru.ifmo.ctddev.gmwcs.solver;
 
-import ilog.concert.IloException;
-import ilog.concert.IloLinearNumExpr;
-import ilog.concert.IloNumExpr;
-import ilog.concert.IloNumVar;
+import ilog.concert.*;
 import ilog.cplex.IloCplex;
 import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class RLTSolver implements RootedSolver {
     public static final double EPS = 0.01;
@@ -56,7 +54,7 @@ public class RLTSolver implements RootedSolver {
             initVariables();
             addConstraints();
             addObjective();
-            maxSizeConstraints();
+            //maxSizeConstraints();
             long timeBefore = System.currentTimeMillis();
             if (root == null) {
                 breakRootSymmetry();
@@ -215,7 +213,7 @@ public class RLTSolver implements RootedSolver {
         cplex.addLe(cplex.sum(d.get(to), cplex.prod(n - 1, z)), cplex.sum(d.get(from), n));
     }
 
-    private void maxSizeConstraints() throws IloException {
+    /*private void maxSizeConstraints() throws IloException {
         for (Node v : graph.vertexSet()) {
             for (Node u : graph.neighborListOf(v)) {
                 if (u.getWeight() >= 0) {
@@ -226,7 +224,7 @@ public class RLTSolver implements RootedSolver {
                 }
             }
         }
-    }
+    }*/
 
     private void otherConstraints() throws IloException {
         // (36), (39)
@@ -237,6 +235,20 @@ public class RLTSolver implements RootedSolver {
             cplex.addLe(cplex.sum(arcs.first, arcs.second), w.get(edge));
             cplex.addLe(w.get(edge), y.get(from));
             cplex.addLe(w.get(edge), y.get(to));
+        }
+
+        // Proper subgraph
+        cplex.addLe(cplex.sum(y.values().toArray(new IloNumVar[]{})), graph.vertexSet().size() - 1);
+
+        // Compulsory nodes
+        List<Node> comp = graph.vertexSet().stream().filter(Unit::isRequired).collect(Collectors.toList());
+        Set<Node> neighbours = new HashSet<>();
+        for(Node n : comp){
+            neighbours.add(n);
+            neighbours.addAll(graph.neighborListOf(n));
+        }
+        if(!neighbours.isEmpty()) {
+            cplex.addGe(cplex.sum(neighbours.stream().map(x -> y.get(x)).toArray(IloNumExpr[]::new)), 1);
         }
     }
 

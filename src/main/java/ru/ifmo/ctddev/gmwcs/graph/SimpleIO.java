@@ -96,9 +96,6 @@ public class SimpleIO implements GraphIO {
                 throw new ParseException("Expected name of second node in edge list in line", lnum);
             }
             String second = tokenizer.nextToken();
-            if (!tokenizer.hasMoreTokens()) {
-                throw new ParseException("Expected weight of edge in line", lnum);
-            }
             try {
                 if (!nodeMap.containsKey(first) || !nodeMap.containsKey(second)) {
                     throw new ParseException("There's no such vertex in edge list in line", lnum);
