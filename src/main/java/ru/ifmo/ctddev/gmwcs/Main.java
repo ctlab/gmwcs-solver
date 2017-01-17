@@ -25,6 +25,8 @@ public class Main {
         OptionSet optionSet = optionParser.parse(args);
         optionParser.acceptsAll(asList("n", "nodes"), "Node list file").withRequiredArg().required();
         optionParser.acceptsAll(asList("e", "edges"), "Edge list file").withRequiredArg().required();
+        optionParser.acceptsAll(asList("c", "comp"), "Compulsory nodes").withRequiredArg();
+        optionParser.acceptsAll(asList("s", "solution"), "Solution file").withRequiredArg().required();
         optionParser.acceptsAll(asList("m", "threads"), "Number of threads").withRequiredArg()
                 .ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
@@ -74,14 +76,14 @@ public class Main {
         int threadsNum = (Integer) optionSet.valueOf("threads");
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
+        File solutionFile = new File((String) optionSet.valueOf("solution"));
         RLTSolver rltSolver = new RLTSolver();
         rltSolver.setThreadsNum(threadsNum);
         BicomponentSolver solver = new BicomponentSolver(rltSolver);
         solver.setUnrootedTL(tl);
         solver.setRootedTL(biggestTL.subLimit(ush == 1.0 ? 0 : rsh / (1.0 - ush)));
         solver.setTLForBiggest(biggestTL);
-        GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
-                edgeFile, new File(edgeFile.toString() + ".out"));
+        GraphIO graphIO = new SimpleIO(nodeFile, solutionFile, edgeFile);
         try {
             Graph graph = graphIO.read();
             List<Unit> units = solver.solve(graph);

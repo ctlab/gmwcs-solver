@@ -1,7 +1,5 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
-import ru.ifmo.ctddev.gmwcs.Pair;
-
 import java.io.*;
 import java.text.ParseException;
 import java.util.*;
@@ -10,21 +8,15 @@ public class SimpleIO implements GraphIO {
     private File nodeIn;
     private File nodeOut;
     private File edgeIn;
-    private File edgeOut;
     private List<String> nodeList;
-    private List<Pair<String, String>> edgeList;
     private Map<String, Node> nodeMap;
-    private Map<String, Map<String, Edge>> edgeMap;
 
-    public SimpleIO(File nodeIn, File nodeOut, File edgeIn, File edgeOut) {
+    public SimpleIO(File nodeIn, File nodeOut, File edgeIn) {
         this.nodeIn = nodeIn;
-        this.edgeOut = edgeOut;
         this.edgeIn = edgeIn;
         this.nodeOut = nodeOut;
         nodeMap = new LinkedHashMap<>();
         nodeList = new ArrayList<>();
-        edgeList = new ArrayList<>();
-        edgeMap = new LinkedHashMap<>();
     }
 
     @Override
@@ -89,19 +81,13 @@ public class SimpleIO implements GraphIO {
                 throw new ParseException("Expected weight of edge in line", lnum);
             }
             try {
-                double weight = Double.parseDouble(tokenizer.nextToken());
                 if (!nodeMap.containsKey(first) || !nodeMap.containsKey(second)) {
                     throw new ParseException("There's no such vertex in edge list in line", lnum);
                 }
-                Edge edge = new Edge(lnum, weight);
+                Edge edge = new Edge(lnum, 0.0);
                 Node from = nodeMap.get(first);
                 Node to = nodeMap.get(second);
                 graph.addEdge(from, to, edge);
-                edgeList.add(new Pair<>(first, second));
-                if (!edgeMap.containsKey(first)) {
-                    edgeMap.put(first, new LinkedHashMap<String, Edge>());
-                }
-                edgeMap.get(first).put(second, edge);
             } catch (NumberFormatException e) {
                 throw new ParseException("Expected floating point value of edge in line", lnum);
             }
@@ -116,22 +102,6 @@ public class SimpleIO implements GraphIO {
         }
         unitSet.addAll(units);
         writeNodes(unitSet);
-        writeEdges(unitSet);
-    }
-
-    private void writeEdges(Set<Unit> units) throws IOException {
-        double sum = 0.0;
-        try (Writer writer = new BufferedWriter(new FileWriter(edgeOut))) {
-            for (Pair<String, String> p : edgeList) {
-                Edge edge = edgeMap.get(p.first).get(p.second);
-                if (units.contains(edge)) {
-                    sum += edge.getWeight();
-                }
-                writer.write(p.first + "\t" + p.second + "\t" + (units.contains(edge) ? edge.getWeight() : "n/a"));
-                writer.write("\n");
-            }
-            writer.write("#subnet edge score\t" + sum);
-        }
     }
 
     private void writeNodes(Set<Unit> units) throws IOException {

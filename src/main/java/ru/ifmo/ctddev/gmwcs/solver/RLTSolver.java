@@ -26,22 +26,11 @@ public class RLTSolver implements RootedSolver {
     private double minimum;
     private Node root;
     private boolean isSolvedToOptimality;
-    private int maxToAddCuts;
-    private int considerCuts;
 
     public RLTSolver() {
         tl = new TimeLimit(Double.POSITIVE_INFINITY);
         threads = 1;
         this.minimum = -Double.MAX_VALUE;
-        maxToAddCuts = considerCuts = Integer.MAX_VALUE;
-    }
-
-    public void setMaxToAddCuts(int num) {
-        maxToAddCuts = num;
-    }
-
-    public void setConsideringCuts(int num) {
-        considerCuts = num;
     }
 
     public void setTimeLimit(TimeLimit tl) {
@@ -71,8 +60,6 @@ public class RLTSolver implements RootedSolver {
             long timeBefore = System.currentTimeMillis();
             if (root == null) {
                 breakRootSymmetry();
-            } else {
-                tighten();
             }
             breakTreeSymmetries();
             tuning(cplex);
@@ -96,45 +83,6 @@ public class RLTSolver implements RootedSolver {
             Node to = graph.getEdgeTarget(e);
             cplex.addLe(cplex.sum(d.get(from), cplex.prod(n - 1, w.get(e))), cplex.sum(n, d.get(to)));
             cplex.addLe(cplex.sum(d.get(to), cplex.prod(n - 1, w.get(e))), cplex.sum(n, d.get(from)));
-        }
-    }
-
-    private void tighten() throws IloException {
-        Blocks blocks = new Blocks(graph);
-        Separator separator = new Separator(y, w, cplex, graph);
-        separator.setMaxToAdd(maxToAddCuts);
-        separator.setMinToConsider(considerCuts);
-        if (blocks.cutpoints().contains(root)) {
-            for (Set<Node> component : blocks.incidentBlocks(root)) {
-                dfs(root, component, true, blocks, separator);
-            }
-        } else {
-            dfs(root, blocks.componentOf(root), true, blocks, separator);
-        }
-        cplex.use(separator);
-    }
-
-    private void dfs(Node root, Set<Node> component, boolean fake, Blocks blocks, Separator separator) throws IloException {
-        separator.addComponent(graph.subgraph(component), root);
-        if (!fake) {
-            for (Node node : component) {
-                cplex.addLe(cplex.diff(y.get(node), y.get(root)), 0);
-            }
-        }
-        for (Edge e : graph.edgesOf(root)) {
-            if (!component.contains(graph.getOppositeVertex(root, e))) {
-                continue;
-            }
-            cplex.addEq(getX(e, root), 0);
-        }
-        for (Node cp : blocks.cutpointsOf(component)) {
-            if (root != cp) {
-                for (Set<Node> comp : blocks.incidentBlocks(cp)) {
-                    if (comp != component) {
-                        dfs(cp, comp, false, blocks, separator);
-                    }
-                }
-            }
         }
     }
 
