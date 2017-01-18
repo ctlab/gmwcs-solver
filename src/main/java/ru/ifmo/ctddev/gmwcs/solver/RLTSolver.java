@@ -54,7 +54,6 @@ public class RLTSolver implements RootedSolver {
             initVariables();
             addConstraints();
             addObjective();
-            //maxSizeConstraints();
             long timeBefore = System.currentTimeMillis();
             if (root == null) {
                 breakRootSymmetry();
@@ -212,19 +211,6 @@ public class RLTSolver implements RootedSolver {
         cplex.addGe(cplex.sum(n, d.get(to)), cplex.sum(d.get(from), cplex.prod(n + 1, z)));
         cplex.addLe(cplex.sum(d.get(to), cplex.prod(n - 1, z)), cplex.sum(d.get(from), n));
     }
-
-    /*private void maxSizeConstraints() throws IloException {
-        for (Node v : graph.vertexSet()) {
-            for (Node u : graph.neighborListOf(v)) {
-                if (u.getWeight() >= 0) {
-                    Edge e = graph.getEdge(v, u);
-                    if (e != null && e.getWeight() >= 0) {
-                        cplex.addLe(y.get(v), w.get(e));
-                    }
-                }
-            }
-        }
-    }*/
 
     private void otherConstraints() throws IloException {
         // (36), (39)
