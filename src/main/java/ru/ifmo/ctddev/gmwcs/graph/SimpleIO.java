@@ -128,10 +128,11 @@ public class SimpleIO implements GraphIO {
                 if (units.contains(node)) {
                     sum += node.getWeight();
                 }
-                writer.write(name + "\t" + (units.contains(node) ? node.getWeight() : "n/a"));
-                writer.write("\n");
+                if(units.contains(node)) {
+                    writer.write(name + "\n");
+                }
             }
-            writer.write("#subnet node score\t" + sum);
+            writer.write("#score\t" + sum);
         }
     }
 }
