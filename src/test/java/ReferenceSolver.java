@@ -18,7 +18,7 @@ public class ReferenceSolver {
             throw new IllegalArgumentException();
         }
         List<Unit> maxSet = Collections.emptyList();
-        double max = roots.isEmpty() ? 0 : -Double.MAX_VALUE;
+        double max = -Double.MAX_VALUE;
         // Isolated vertices
         for (Node node : graph.vertexSet()) {
             if ((roots.isEmpty() || (roots.size() == 1 && roots.get(0) == node)) && node.getWeight() > max) {
