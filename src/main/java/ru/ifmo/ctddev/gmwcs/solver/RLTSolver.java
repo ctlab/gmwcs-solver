@@ -223,15 +223,14 @@ public class RLTSolver implements RootedSolver {
             cplex.addLe(w.get(edge), y.get(to));
         }
 
-        // Proper subgraph
-        cplex.addLe(cplex.sum(y.values().toArray(new IloNumVar[]{})), graph.vertexSet().size() - 1);
-
         // Compulsory nodes and non-degeneracy
         List<Node> comp = graph.vertexSet().stream().filter(Unit::isRequired).collect(Collectors.toList());
 
         Set<Node> compSet = new TreeSet<>(y.keySet());
         compSet.removeAll(comp);
         cplex.addGe(cplex.sum(compSet.stream().map(x -> y.get(x)).toArray(IloIntExpr[]::new)), 1);
+        // Proper subgraph
+        cplex.addLe(cplex.sum(compSet.stream().map(x -> y.get(x)).toArray(IloIntExpr[]::new)), compSet.size() - 1);
 
         Set<Node> neighbours = new HashSet<>();
         for(Node n : comp){
