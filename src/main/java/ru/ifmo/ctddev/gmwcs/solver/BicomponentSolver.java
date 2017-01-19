@@ -37,11 +37,11 @@ public class BicomponentSolver implements Solver {
     public List<Unit> solve(Graph graph) throws SolverException {
         Graph g = graph;
         graph = graph.subgraph(graph.vertexSet());
-        /*Preprocessor.preprocess(graph);
+        Preprocessor.preprocess(graph);
         if (!silence) {
             System.out.print("Preprocessing deleted " + (g.vertexSet().size() - graph.vertexSet().size()) + " nodes ");
             System.out.println("and " + (g.edgeSet().size() - graph.edgeSet().size()) + " edges.");
-        }*/
+        }
         isSolvedToOptimality = true;
         solver.setLB(-Double.MAX_VALUE);
         if (graph.vertexSet().size() == 0) {

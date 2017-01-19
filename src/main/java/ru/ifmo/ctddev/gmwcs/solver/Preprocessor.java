@@ -5,12 +5,47 @@ import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
 import ru.ifmo.ctddev.gmwcs.graph.Unit;
 
-import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Preprocessor {
-    public static void preprocess(Graph graph) {
+    public static void preprocess(Graph graph){
+        List<Node> comp = graph.vertexSet().stream().filter(Unit::isRequired).collect(Collectors.toList());
+        comp = comp.stream().filter(x -> x.getWeight() >= 0.0).collect(Collectors.toList());
+        for(Node v : comp){
+            if(!graph.containsVertex(v)){
+                continue;
+            }
+            boolean changed = true;
+            while(changed){
+                changed = false;
+                for(Node u : graph.neighborListOf(v)){
+                    if(u.getWeight() >= 0.0){
+                        merge(graph, v, u);
+                        changed = true;
+                    }
+                }
+            }
+        }
+    }
+
+    public static void merge(Graph graph, Node v, Node u){
+        v.absorb(u);
+        Set<Node> neighbours = new HashSet<>(graph.neighborListOf(v));
+        neighbours.add(v);
+        for(Edge e : graph.edgesOf(u)){
+            Node w = graph.getOppositeVertex(u, e);
+            if(!neighbours.contains(w)){
+                graph.removeEdge(e);
+                graph.addEdge(v, w, e);
+            }
+        }
+        graph.removeVertex(u);
+    }
+
+    /*public static void preprocess(Graph graph) {
         for (Edge edge : new ArrayList<>(graph.edgeSet())) {
             if (!graph.containsEdge(edge)) {
                 continue;
@@ -94,5 +129,5 @@ public class Preprocessor {
         graph.removeVertex(aux);
         main.absorb(aux);
         main.absorb(e);
-    }
+    }*/
 }
