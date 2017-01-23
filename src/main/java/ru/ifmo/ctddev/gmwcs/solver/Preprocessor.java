@@ -22,7 +22,7 @@ public class Preprocessor {
             while(changed){
                 changed = false;
                 for(Node u : graph.neighborListOf(v)){
-                    if(u.getWeight() >= 0.0){
+                    if(u.getWeight() >= 0.0 && u.isRequired()){
                         merge(graph, v, u);
                         changed = true;
                     }
