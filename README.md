@@ -10,7 +10,7 @@ Then you should install concert library of CPLEX.
 It's located in "cplex/lib" directory from CPLEX STUDIO root path.
 For example, 
 
-    mvn install:install-file -Dfile=/opt/ibm/ILOG/CPLEX_Studio1251/cplex/lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.5.1 -Dpackaging=jar
+    mvn install:install-file -Dfile=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar -DgroupId=com.ibm -DartifactId=cplex -Dversion=12.6.3 -Dpackaging=jar
     
 After that you can build the project using maven:
 
@@ -23,7 +23,7 @@ Running
 
 To run program you should set jvm parameter java.library.path to directory of CPLEX binaries like that:
 
-    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1251/cplex/bin/x86-64_sles10_4.1/ -jar gmwcs.jar
+    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_sles10_4.1/ -jar gmwcs.jar
 
 See more help by using flag -h.
 
