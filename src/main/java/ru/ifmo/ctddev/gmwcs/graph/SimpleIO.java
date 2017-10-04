@@ -109,40 +109,40 @@ public class SimpleIO implements GraphIO {
     }
 
     @Override
-    public void write(List<Unit> units) throws IOException {
-        Set<Unit> unitSet = new LinkedHashSet<>();
-        if (units == null) {
-            units = new ArrayList<>();
+    public void write(List<Elem> elems) throws IOException {
+        Set<Elem> elemSet = new LinkedHashSet<>();
+        if (elems == null) {
+            elems = new ArrayList<>();
         }
-        unitSet.addAll(units);
-        writeNodes(unitSet);
-        writeEdges(unitSet);
+        elemSet.addAll(elems);
+        writeNodes(elemSet);
+        writeEdges(elemSet);
     }
 
-    private void writeEdges(Set<Unit> units) throws IOException {
+    private void writeEdges(Set<Elem> elems) throws IOException {
         double sum = 0.0;
         try (Writer writer = new BufferedWriter(new FileWriter(edgeOut))) {
             for (Pair<String, String> p : edgeList) {
                 Edge edge = edgeMap.get(p.first).get(p.second);
-                if (units.contains(edge)) {
+                if (elems.contains(edge)) {
                     sum += edge.getWeight();
                 }
-                writer.write(p.first + "\t" + p.second + "\t" + (units.contains(edge) ? edge.getWeight() : "n/a"));
+                writer.write(p.first + "\t" + p.second + "\t" + (elems.contains(edge) ? edge.getWeight() : "n/a"));
                 writer.write("\n");
             }
             writer.write("#subnet edge score\t" + sum);
         }
     }
 
-    private void writeNodes(Set<Unit> units) throws IOException {
+    private void writeNodes(Set<Elem> elems) throws IOException {
         double sum = 0.0;
         try (Writer writer = new BufferedWriter(new FileWriter(nodeOut))) {
             for (String name : nodeList) {
                 Node node = nodeMap.get(name);
-                if (units.contains(node)) {
+                if (elems.contains(node)) {
                     sum += node.getWeight();
                 }
-                writer.write(name + "\t" + (units.contains(node) ? node.getWeight() : "n/a"));
+                writer.write(name + "\t" + (elems.contains(node) ? node.getWeight() : "n/a"));
                 writer.write("\n");
             }
             writer.write("#subnet node score\t" + sum);

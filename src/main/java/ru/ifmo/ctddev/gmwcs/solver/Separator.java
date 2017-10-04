@@ -6,7 +6,7 @@ import ilog.cplex.IloCplex;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.Elem;
 
 import java.util.*;
 
@@ -26,7 +26,7 @@ public class Separator extends IloCplex.UserCutCallback {
     private double period;
     private Graph graph;
     private boolean inited;
-    private Map<Unit, Integer> indices;
+    private Map<Elem, Integer> indices;
     private IloNumVar[] vars;
 
     public Separator(Map<Node, IloNumVar> y, Map<Edge, IloNumVar> w, IloCplex cplex, Graph graph) {

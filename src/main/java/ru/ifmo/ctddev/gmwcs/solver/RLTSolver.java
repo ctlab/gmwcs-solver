@@ -60,7 +60,7 @@ public class RLTSolver implements RootedSolver {
     }
 
     @Override
-    public List<Unit> solve(Graph graph) throws SolverException {
+    public List<Elem> solve(Graph graph) throws SolverException {
         try {
             cplex = new IloCplex();
             this.graph = graph;
@@ -142,9 +142,9 @@ public class RLTSolver implements RootedSolver {
         return isSolvedToOptimality;
     }
 
-    private List<Unit> getResult() throws IloException {
+    private List<Elem> getResult() throws IloException {
         isSolvedToOptimality = false;
-        List<Unit> result = new ArrayList<>();
+        List<Elem> result = new ArrayList<>();
         for (Node node : graph.vertexSet()) {
             if (cplex.getValue(y.get(node)) > EPS) {
                 result.add(node);
@@ -220,20 +220,20 @@ public class RLTSolver implements RootedSolver {
     }
 
     private void addObjective() throws IloException {
-        Map<Unit, IloNumVar> summands = new LinkedHashMap<>();
-        Set<Unit> toConsider = new LinkedHashSet<>();
+        Map<Elem, IloNumVar> summands = new LinkedHashMap<>();
+        Set<Elem> toConsider = new LinkedHashSet<>();
         toConsider.addAll(graph.vertexSet());
         toConsider.addAll(graph.edgeSet());
-        for (Unit unit : toConsider) {
-            summands.put(unit, getVar(unit));
+        for (Elem elem : toConsider) {
+            summands.put(elem, getVar(elem));
         }
         IloNumExpr sum = unitScalProd(summands.keySet(), summands);
         cplex.addGe(sum, minimum);
         cplex.addMaximize(sum);
     }
 
-    private IloNumVar getVar(Unit unit) {
-        return unit instanceof Node ? y.get(unit) : w.get(unit);
+    private IloNumVar getVar(Elem elem) {
+        return elem instanceof Node ? y.get(elem) : w.get(elem);
     }
 
     @Override
@@ -319,14 +319,14 @@ public class RLTSolver implements RootedSolver {
         }
     }
 
-    private IloLinearNumExpr unitScalProd(Set<? extends Unit> units, Map<? extends Unit, IloNumVar> vars) throws IloException {
+    private IloLinearNumExpr unitScalProd(Set<? extends Elem> units, Map<? extends Elem, IloNumVar> vars) throws IloException {
         int n = units.size();
         double[] coef = new double[n];
         IloNumVar[] variables = new IloNumVar[n];
         int i = 0;
-        for (Unit unit : units) {
-            coef[i] = unit.getWeight();
-            variables[i++] = vars.get(unit);
+        for (Elem elem : units) {
+            coef[i] = elem.getWeight();
+            variables[i++] = vars.get(elem);
         }
         return cplex.scalProd(coef, variables);
     }

@@ -1,6 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
-public class Edge extends Unit {
+public class Edge extends Elem {
     public Edge(int num, double weight) {
         super(num, weight);
     }

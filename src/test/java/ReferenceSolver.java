@@ -1,14 +1,14 @@
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.Elem;
 
 import java.util.*;
 
 import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
 
 public class ReferenceSolver {
-    public List<Unit> solve(Graph graph, List<Node> roots) {
+    public List<Elem> solve(Graph graph, List<Node> roots) {
         for (Node root : roots) {
             if (!graph.containsVertex(root)) {
                 throw new IllegalArgumentException();
@@ -17,7 +17,7 @@ public class ReferenceSolver {
         if (graph.edgeSet().size() > 31) {
             throw new IllegalArgumentException();
         }
-        List<Unit> maxSet = Collections.emptyList();
+        List<Elem> maxSet = Collections.emptyList();
         double max = roots.isEmpty() ? 0 : -Double.MAX_VALUE;
         // Isolated vertices
         for (Node node : graph.vertexSet()) {

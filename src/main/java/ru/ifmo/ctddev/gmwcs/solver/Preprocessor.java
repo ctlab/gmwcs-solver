@@ -3,7 +3,7 @@ package ru.ifmo.ctddev.gmwcs.solver;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.Elem;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -42,14 +42,14 @@ public class Preprocessor {
         }
     }
 
-    private static void merge(Graph graph, Unit... units) {
+    private static void merge(Graph graph, Elem... elems) {
         Set<Node> nodes = new HashSet<>();
         Set<Edge> edges = new HashSet<>();
-        for (Unit unit : units) {
-            if (unit instanceof Node) {
-                nodes.add((Node) unit);
+        for (Elem elem : elems) {
+            if (elem instanceof Node) {
+                nodes.add((Node) elem);
             } else {
-                edges.add((Edge) unit);
+                edges.add((Edge) elem);
             }
         }
         for (Edge e : edges) {

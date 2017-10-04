@@ -5,7 +5,7 @@ import org.junit.runners.MethodSorters;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.Elem;
 import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
@@ -49,7 +49,7 @@ public class GMWCSTests {
             return;
         }
         Graph graph = new Graph();
-        List<Unit> res = solver.solve(graph);
+        List<Elem> res = solver.solve(graph);
         if (!(res == null || res.isEmpty())) {
             Assert.assertTrue(false);
         }
@@ -98,8 +98,8 @@ public class GMWCSTests {
     }
 
     private void check(TestCase test, int num) {
-        List<Unit> expected = referenceSolver.solve(test.graph(), Collections.emptyList());
-        List<Unit> actual = null;
+        List<Elem> expected = referenceSolver.solve(test.graph(), Collections.emptyList());
+        List<Elem> actual = null;
         try {
             solver.suppressOutput();
             actual = solver.solve(test.graph());

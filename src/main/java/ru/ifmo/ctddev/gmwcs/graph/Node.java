@@ -1,6 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.graph;
 
-public class Node extends Unit {
+public class Node extends Elem {
 
     public Node(int num, double weight) {
         super(num, weight);

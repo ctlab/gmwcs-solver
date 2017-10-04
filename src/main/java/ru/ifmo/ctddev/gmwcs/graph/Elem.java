@@ -3,35 +3,35 @@ package ru.ifmo.ctddev.gmwcs.graph;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class Unit implements Comparable<Unit> {
+public abstract class Elem implements Comparable<Elem> {
     protected int num;
     protected double weight;
-    protected List<Unit> absorbed;
+    protected List<Elem> absorbed;
 
-    public Unit(int num, double weight) {
+    public Elem(int num, double weight) {
         this.num = num;
         this.weight = weight;
         absorbed = new ArrayList<>();
     }
 
-    public void absorb(Unit unit) {
-        for (Unit u : unit.getAbsorbed()) {
+    public void absorb(Elem elem) {
+        for (Elem u : elem.getAbsorbed()) {
             absorbed.add(u);
             weight += u.weight;
         }
-        unit.clear();
-        absorbed.add(unit);
-        weight += unit.weight;
+        elem.clear();
+        absorbed.add(elem);
+        weight += elem.weight;
     }
 
     public void clear() {
-        for (Unit unit : absorbed) {
-            weight -= unit.getWeight();
+        for (Elem elem : absorbed) {
+            weight -= elem.getWeight();
         }
         absorbed.clear();
     }
 
-    public List<Unit> getAbsorbed() {
+    public List<Elem> getAbsorbed() {
         return new ArrayList<>(absorbed);
     }
 
@@ -54,11 +54,11 @@ public abstract class Unit implements Comparable<Unit> {
 
     @Override
     public boolean equals(Object o) {
-        return (o.getClass() == getClass() && num == ((Unit) o).num);
+        return (o.getClass() == getClass() && num == ((Elem) o).num);
     }
 
     @Override
-    public int compareTo(Unit u) {
+    public int compareTo(Elem u) {
         if (u.weight != weight) {
             return Double.compare(u.weight, weight);
         }

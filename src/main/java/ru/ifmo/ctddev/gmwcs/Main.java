@@ -5,7 +5,7 @@ import joptsimple.OptionSet;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.GraphIO;
 import ru.ifmo.ctddev.gmwcs.graph.SimpleIO;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.Elem;
 import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
@@ -84,8 +84,8 @@ public class Main {
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {
             Graph graph = graphIO.read();
-            List<Unit> units = solver.solve(graph);
-            graphIO.write(units);
+            List<Elem> elems = solver.solve(graph);
+            graphIO.write(elems);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
         } catch (SolverException e) {

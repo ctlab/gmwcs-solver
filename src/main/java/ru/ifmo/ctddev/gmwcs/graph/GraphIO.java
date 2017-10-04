@@ -7,5 +7,5 @@ import java.util.List;
 public interface GraphIO {
     Graph read() throws IOException, ParseException;
 
-    void write(List<Unit> units) throws IOException;
+    void write(List<Elem> elems) throws IOException;
 }

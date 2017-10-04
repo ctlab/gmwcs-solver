@@ -3,7 +3,7 @@ package ru.ifmo.ctddev.gmwcs.solver;
 import ru.ifmo.ctddev.gmwcs.graph.Edge;
 import ru.ifmo.ctddev.gmwcs.graph.Graph;
 import ru.ifmo.ctddev.gmwcs.graph.Node;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.Elem;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -11,31 +11,31 @@ import java.util.List;
 
 
 public class Utils {
-    public static double sum(List<Unit> units) {
-        if (units == null) {
+    public static double sum(List<Elem> elems) {
+        if (elems == null) {
             return 0;
         }
         double res = 0;
-        for (Unit unit : units) {
-            res += unit.getWeight();
+        for (Elem elem : elems) {
+            res += elem.getWeight();
         }
         return res;
     }
 
-    private static String dotColor(Unit unit, List<Unit> expected, List<Unit> actual) {
-        if (actual != null && expected.contains(unit) && actual.contains(unit)) {
+    private static String dotColor(Elem elem, List<Elem> expected, List<Elem> actual) {
+        if (actual != null && expected.contains(elem) && actual.contains(elem)) {
             return "YELLOW";
         }
-        if (expected.contains(unit)) {
+        if (expected.contains(elem)) {
             return "GREEN";
         }
-        if (actual != null && actual.contains(unit)) {
+        if (actual != null && actual.contains(elem)) {
             return "RED";
         }
         return "BLACK";
     }
 
-    public static void toXdot(Graph graph, List<Unit> expected, List<Unit> actual) throws IOException {
+    public static void toXdot(Graph graph, List<Elem> expected, List<Elem> actual) throws IOException {
         Runtime runtime = Runtime.getRuntime();
         Process process = runtime.exec("xdot");
         try (PrintWriter os = new PrintWriter(process.getOutputStream())) {
