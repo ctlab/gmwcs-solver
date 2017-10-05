@@ -19,8 +19,10 @@ class Preprocessor(val graph: Graph) {
 
 
     private fun mergeNegative() {
-        for (v in graph.vertexSet().toList()
-                .filter { it.weight <= 0 && graph.degreeOf(it) == 2 }) {
+        for (v in graph.vertexSet().toList()) {
+            if (v.weight > 0 || graph.degreeOf(v) != 2) {
+                continue
+            }
             val edges = graph.edgesOf(v).toTypedArray()
             if (edges[0].weight > 0 || edges[1].weight > 0)
                 continue

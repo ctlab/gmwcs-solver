@@ -11,9 +11,9 @@ import java.util.*
  * Created by Nikolay Poperechnyi on 04/10/2017.
  */
 class Dijkstra(val graph: Graph, val from: Node) {
-    private val s = from.num;
+    private val s = from.num
 
-    private val n = graph.vertexSet().size
+    private val n = graph.vertexSet().maxBy { it.num }!!.num + 1
 
     private val visited = BooleanArray(n, { false })
 
@@ -29,7 +29,7 @@ class Dijkstra(val graph: Graph, val from: Node) {
         d[s][s] = 0.0
         queue.add(from)
         while (queue.isNotEmpty()) {
-            val cur = queue.peek()
+            val cur = queue.poll()
             visited[cur.num] = true
             for (adj in graph.neighborListOf(cur).filter { !visited[it.num] }) {
                 // 0 for positive, -weight for negative
@@ -50,6 +50,4 @@ class Dijkstra(val graph: Graph, val from: Node) {
                     && d[s][graph.getOppositeVertex(from, it).num] < -it.weight
         }
     }
-
-
 }

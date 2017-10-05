@@ -37,7 +37,7 @@ public class BicomponentSolver implements Solver {
     public List<Elem> solve(Graph graph) throws SolverException {
         Graph g = graph;
         graph = graph.subgraph(graph.vertexSet());
-        Preprocessor.preprocess(graph);
+        new Preprocessor(graph).preprocess();
         if (!silence) {
             System.out.print("Preprocessing deleted " + (g.vertexSet().size() - graph.vertexSet().size()) + " nodes ");
             System.out.println("and " + (g.edgeSet().size() - graph.edgeSet().size()) + " edges.");
