@@ -55,7 +55,7 @@ public class Graph {
         m.get(u).add(l);
     }
 
-    public Node getOppositeVertex(Node v, Edge e) {
+    public Node opposite(Node v, Edge e) {
         return getOppositeVertex(v, links.get(e));
     }
 

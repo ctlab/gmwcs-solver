@@ -4,7 +4,6 @@ package ru.ifmo.ctddev.gmwcs.solver
 import ru.ifmo.ctddev.gmwcs.graph.Edge
 import ru.ifmo.ctddev.gmwcs.graph.Graph
 import ru.ifmo.ctddev.gmwcs.graph.Node
-import ru.ifmo.ctddev.gmwcs.graph.Elem
 import java.util.*
 
 /**
@@ -22,7 +21,9 @@ class Dijkstra(val graph: Graph, val from: Node) {
             { DoubleArray(n, { Double.MAX_VALUE }) }
     )
 
-    private fun solve(): Unit {
+    private fun solve(neighbors: Set<Node>): Unit {
+        if (d[s][s] != Double.MAX_VALUE) return
+
         val queue = PriorityQueue<Node>(
                 { n1, n2 -> (d[s][n1.num] - d[s][n2.num]).compareTo(0) }
         )
@@ -31,10 +32,12 @@ class Dijkstra(val graph: Graph, val from: Node) {
         while (queue.isNotEmpty()) {
             val cur = queue.poll()
             visited[cur.num] = true
+            // Stop searching if shortest paths are found
+            if (neighbors.contains(cur) && neighbors.all { visited[it.num] })
+                break
             for (adj in graph.neighborListOf(cur).filter { !visited[it.num] }) {
                 // 0 for positive, -weight for negative
-                val w = d[s][cur.num] - minOf(graph.getEdge(cur, adj).weight, 0.0)
-                                      - minOf(cur.weight, 0.0)
+                val w = d[s][cur.num] - minOf(graph.getEdge(cur, adj).weight, 0.0) - minOf(cur.weight, 0.0)
                 if (d[s][adj.num] > w) {
                     d[s][adj.num] = w
                     queue.add(adj)
@@ -43,11 +46,18 @@ class Dijkstra(val graph: Graph, val from: Node) {
         }
     }
 
-    fun negativeEdges(): List<Edge> {
-        if (d[s][s] == Double.MAX_VALUE)
-            solve()
-        return graph.edgesOf(from).filter { it.weight <= 0
-                    && d[s][graph.getOppositeVertex(from, it).num] < -it.weight
+    fun negativeEdges(neighbors: Set<Node>): List<Edge> {
+        solve(neighbors)
+        return graph.edgesOf(from).filter {
+            it.weight <= 0
+                    && d[s][graph.opposite(from, it).num] > it.weight
         }
+    }
+
+    fun negativeVertex(dest: Node, candidate: Node): Boolean {
+        solve(setOf(dest))
+        // test is passed if candidate for removal is not in the solution
+        val candPathW = d[s][candidate.num] + graph.getEdge(candidate, dest).weight
+        return d[s][dest.num] != candPathW
     }
 }

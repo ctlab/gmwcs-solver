@@ -122,7 +122,7 @@ public class RLTSolver implements RootedSolver {
             }
         }
         for (Edge e : graph.edgesOf(root)) {
-            if (!component.contains(graph.getOppositeVertex(root, e))) {
+            if (!component.contains(graph.opposite(root, e))) {
                 continue;
             }
             cplex.addEq(getX(e, root), 0);

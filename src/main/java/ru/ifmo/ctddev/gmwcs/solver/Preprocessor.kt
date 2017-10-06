@@ -15,6 +15,7 @@ class Preprocessor(val graph: Graph) {
         mergePositive()
         mergeNegative()
         negativeEdges()
+        negativeVertices()
     }
 
 
@@ -26,7 +27,7 @@ class Preprocessor(val graph: Graph) {
             val edges = graph.edgesOf(v).toTypedArray()
             if (edges[0].weight > 0 || edges[1].weight > 0)
                 continue
-            val nodes = edges.map { graph.getOppositeVertex(v, it) }
+            val nodes = edges.map { graph.opposite(v, it) }
             val (l, r) = Pair(nodes[0], nodes[1])
             graph.removeVertex(v)
             if (l != r) {
@@ -49,12 +50,31 @@ class Preprocessor(val graph: Graph) {
         }
     }
 
+    private fun negativeVertices() {
+        graph.vertexSet()
+                .filter {
+                    it.weight <= 0 && graph.edgesOf(it).size == 2
+                            && graph.edgesOf(it).all { it.weight <= 0 }
+                }
+                .forEach {
+                    val neighbors = graph.neighborListOf(it)
+                    val n1 = neighbors[0];
+                    val n2 = neighbors[1]
+                    if (Dijkstra(graph, n1).negativeVertex(n2, it))
+                        graph.removeVertex(it)
+                }
+
+    }
+
     private fun negativeEdges() {
         graph.vertexSet()
-                .filter { n -> graph.edgesOf(n).any { it.weight <= 0 } }
-                .forEach {
-                    Dijkstra(graph, it).negativeEdges()
-                            .forEach { graph::removeEdge }
+                .forEach { n ->
+                    val neighs = graph.edgesOf(n)
+                            .filter { it.weight <= 0 }
+                            .map { graph.opposite(n, it) }.toSet()
+                    if (!neighs.isEmpty())
+                        Dijkstra(graph, n).negativeEdges(neighs)
+                                .forEach { graph::removeEdge }
                 }
     }
 
@@ -69,7 +89,7 @@ class Preprocessor(val graph: Graph) {
         val auxEdges = graph.edgesOf(aux).toMutableSet()
         auxEdges.remove(e)
         for (edge in auxEdges) {
-            val opposite = graph.getOppositeVertex(aux, edge)
+            val opposite = graph.opposite(aux, edge)
             val m = graph.getEdge(main, opposite)
             graph.removeEdge(edge)
             if (m == null) {
