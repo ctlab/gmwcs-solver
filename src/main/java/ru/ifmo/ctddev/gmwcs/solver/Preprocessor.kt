@@ -9,15 +9,15 @@ import ru.ifmo.ctddev.gmwcs.graph.Node
  */
 class Preprocessor(val graph: Graph) {
 
-    fun Graph.getAdjacent(e: Edge) = Pair(this.getEdgeSource(e), this.getEdgeTarget(e))
+    private fun Graph.getAdjacent(e: Edge) = Pair(this.getEdgeSource(e), this.getEdgeTarget(e))
 
-    fun preprocess(): Unit {
+    fun preprocess() {
         mergePositive()
         mergeNegative()
         negativeEdges()
-        negativeVertices()
+       // negativeVertices()
+        // cns()
     }
-
 
     private fun mergeNegative() {
         for (v in graph.vertexSet().toList()) {
@@ -51,19 +51,18 @@ class Preprocessor(val graph: Graph) {
     }
 
     private fun negativeVertices() {
-        graph.vertexSet()
-                .filter {
-                    it.weight <= 0 && graph.edgesOf(it).size == 2
-                            && graph.edgesOf(it).all { it.weight <= 0 }
-                }
+        graph.vertexSet().toSet()
                 .forEach {
-                    val neighbors = graph.neighborListOf(it)
-                    val n1 = neighbors[0];
-                    val n2 = neighbors[1]
-                    if (Dijkstra(graph, n1).negativeVertex(n2, it))
-                        graph.removeVertex(it)
+                    if (it.weight <= 0
+                            && graph.neighborListOf(it).size == 2
+                            && graph.edgesOf(it).all { it.weight <= 0 }) {
+                        val neighbors = graph.neighborListOf(it)
+                        val n1 = neighbors[0]
+                        val n2 = neighbors[1]
+                        if (Dijkstra(graph, n1).negativeVertex(n2, it))
+                            graph.removeVertex(it)
+                    }
                 }
-
     }
 
     private fun negativeEdges() {
@@ -74,17 +73,67 @@ class Preprocessor(val graph: Graph) {
                             .map { graph.opposite(n, it) }.toSet()
                     if (!neighs.isEmpty())
                         Dijkstra(graph, n).negativeEdges(neighs)
-                                .forEach { graph::removeEdge }
+                                .forEach { graph.removeEdge(it) }
                 }
     }
 
-    private fun merge(e: Edge, l: Node, r: Node): Unit {
+
+    private fun cns() {
+        val toRemove = mutableSetOf<Node>()
+        val vertexSet = graph.vertexSet()
+        for (v in vertexSet) {
+            if (!toRemove.contains(v)) {
+                toRemove.addAll(cnsTest(v))
+            }
+        }
+    }
+
+    private fun cnsTest(v: Node): Set<Node> {
+        val res = mutableSetOf<Node>()
+        val (w, wSum) = goodNeighbors(v)
+        for (u in w) {
+            for (cand in graph.neighborListOf(u).filter { !w.contains(it) }) {
+                val candN = graph.neighborListOf(cand)
+                if (w.containsAll(candN)) {
+                    val bestSum = cand.weight + graph.edgesOf(cand)
+                            .sumByDouble { Math.max(it.weight, 0.0) }
+                    if (bestSum < wSum) {
+                        res.add(cand)
+                    }
+                }
+            }
+        }
+        return res
+    }
+
+    data class Neighbors(val w: MutableSet<Node>, val sum: Double)
+
+    private fun goodNeighbors(v: Node): Neighbors {
+        var wSum = 0.0
+        val w = mutableSetOf(v)
+        for (u in graph.neighborListOf(v)) {
+            val edges = graph.getAllEdges(u, v)
+            edges.sortBy { -it.weight }
+            val pos = edges.takeWhile { it.weight >= 0 }.map { it.weight }
+            if (!pos.isEmpty()) {
+                wSum += u.weight
+                wSum += pos.sum()
+                w.add(u)
+            } else if (u.weight >= 0) {
+                wSum += u.weight + edges[0].weight
+                w.add(u)
+            }
+        }
+        return Neighbors(w, wSum)
+    }
+
+    private fun merge(e: Edge, l: Node, r: Node) {
         if (!listOf(l, r).containsAll(graph.getAdjacent(e).toList()))
             throw IllegalArgumentException()
         contract(e)
     }
 
-    private fun contract(e: Edge): Unit {
+    private fun contract(e: Edge) {
         val (main, aux) = graph.getAdjacent(e)
         val auxEdges = graph.edgesOf(aux).toMutableSet()
         auxEdges.remove(e)
@@ -115,4 +164,6 @@ class Preprocessor(val graph: Graph) {
         main.absorb(aux)
         main.absorb(e)
     }
+
+
 }

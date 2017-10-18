@@ -9,7 +9,8 @@ import java.util.*
 /**
  * Created by Nikolay Poperechnyi on 04/10/2017.
  */
-class Dijkstra(val graph: Graph, val from: Node) {
+class Dijkstra(private val graph: Graph, private val from: Node) {
+
     private val s = from.num
 
     private val n = graph.vertexSet().maxBy { it.num }!!.num + 1
@@ -21,7 +22,7 @@ class Dijkstra(val graph: Graph, val from: Node) {
             { DoubleArray(n, { Double.MAX_VALUE }) }
     )
 
-    private fun solve(neighbors: Set<Node>): Unit {
+    private fun solve(neighbors: Set<Node>) {
         if (d[s][s] != Double.MAX_VALUE) return
 
         val queue = PriorityQueue<Node>(
@@ -49,8 +50,8 @@ class Dijkstra(val graph: Graph, val from: Node) {
     fun negativeEdges(neighbors: Set<Node>): List<Edge> {
         solve(neighbors)
         return graph.edgesOf(from).filter {
-            it.weight <= 0
-                    && d[s][graph.opposite(from, it).num] > it.weight
+            val end = graph.opposite(from ,it).num
+            it.weight <= 0 && d[s][end] < -it.weight
         }
     }
 
