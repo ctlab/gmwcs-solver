@@ -18,18 +18,15 @@ class Dijkstra(private val graph: Graph, private val from: Node) {
 
     private val visited = BooleanArray(n, { false })
 
-    private var d = Array(
-            n,
-            { DoubleArray(n, { Double.MAX_VALUE }) }
-    )
+    private var d = DoubleArray(n, { Double.MAX_VALUE })
 
     private fun solve(neighbors: Set<Node>) {
-        if (d[s][s] != Double.MAX_VALUE) return
+        if (d[s] != Double.MAX_VALUE) return
 
         val queue = PriorityQueue<Node>(
-                { n1, n2 -> (d[s][n1.num] - d[s][n2.num]).compareTo(0) }
+                { n1, n2 -> (d[n1.num] - d[n2.num]).compareTo(0) }
         )
-        d[s][s] = 0.0
+        d[s] = 0.0
         queue.add(from)
         while (queue.isNotEmpty()) {
             val cur = queue.poll()
@@ -39,9 +36,9 @@ class Dijkstra(private val graph: Graph, private val from: Node) {
                 break
             for (adj in graph.neighborListOf(cur).filter { !visited[it.num] }) {
                 // 0 for positive, -weight for negative
-                val w = d[s][cur.num] + p(graph.getEdge(cur, adj)) + p(cur)
-                if (d[s][adj.num] > w) {
-                    d[s][adj.num] = w
+                val w = d[cur.num] + p(graph.getEdge(cur, adj)) + p(cur)
+                if (d[adj.num] > w) {
+                    d[adj.num] = w
                     queue.add(adj)
                 }
             }
@@ -51,16 +48,16 @@ class Dijkstra(private val graph: Graph, private val from: Node) {
     fun negativeEdges(neighbors: Set<Node>): List<Edge> {
         solve(neighbors)
         return graph.edgesOf(from).filter {
-            val end = graph.opposite(from ,it).num
-            it.weight <= 0 && d[s][end] < -it.weight
+            val end = graph.opposite(from, it).num
+            it.weight <= 0 && d[end] < -it.weight
         }
     }
 
     fun negativeVertex(dest: Node, candidate: Node): Boolean {
         solve(setOf(dest))
         // test is passed if candidate for removal is not in the solution
-        val candPathW = d[s][candidate.num] + p(graph.getEdge(candidate, dest)) + p(candidate)
-        return d[s][dest.num] != candPathW
+        val candPathW = d[candidate.num] + p(graph.getEdge(candidate, dest)) + p(candidate)
+        return d[dest.num] != candPathW
     }
 
     private fun p(e: Elem): Double {
