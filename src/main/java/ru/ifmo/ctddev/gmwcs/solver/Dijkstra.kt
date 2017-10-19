@@ -2,6 +2,7 @@ package ru.ifmo.ctddev.gmwcs.solver
 
 
 import ru.ifmo.ctddev.gmwcs.graph.Edge
+import ru.ifmo.ctddev.gmwcs.graph.Elem
 import ru.ifmo.ctddev.gmwcs.graph.Graph
 import ru.ifmo.ctddev.gmwcs.graph.Node
 import java.util.*
@@ -38,7 +39,7 @@ class Dijkstra(private val graph: Graph, private val from: Node) {
                 break
             for (adj in graph.neighborListOf(cur).filter { !visited[it.num] }) {
                 // 0 for positive, -weight for negative
-                val w = d[s][cur.num] - minOf(graph.getEdge(cur, adj).weight, 0.0) - minOf(cur.weight, 0.0)
+                val w = d[s][cur.num] + p(graph.getEdge(cur, adj)) + p(cur)
                 if (d[s][adj.num] > w) {
                     d[s][adj.num] = w
                     queue.add(adj)
@@ -58,7 +59,11 @@ class Dijkstra(private val graph: Graph, private val from: Node) {
     fun negativeVertex(dest: Node, candidate: Node): Boolean {
         solve(setOf(dest))
         // test is passed if candidate for removal is not in the solution
-        val candPathW = d[s][candidate.num] + graph.getEdge(candidate, dest).weight
+        val candPathW = d[s][candidate.num] + p(graph.getEdge(candidate, dest)) + p(candidate)
         return d[s][dest.num] != candPathW
+    }
+
+    private fun p(e: Elem): Double {
+        return -minOf(e.weight, 0.0)
     }
 }

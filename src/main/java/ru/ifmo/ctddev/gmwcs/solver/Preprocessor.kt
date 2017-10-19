@@ -15,8 +15,8 @@ class Preprocessor(val graph: Graph) {
         mergePositive()
         mergeNegative()
         negativeEdges()
-       // negativeVertices()
-        // cns()
+        negativeVertices()
+        cns()
     }
 
     private fun mergeNegative() {
@@ -53,16 +53,20 @@ class Preprocessor(val graph: Graph) {
     private fun negativeVertices() {
         graph.vertexSet().toSet()
                 .forEach {
-                    if (it.weight <= 0
-                            && graph.neighborListOf(it).size == 2
-                            && graph.edgesOf(it).all { it.weight <= 0 }) {
-                        val neighbors = graph.neighborListOf(it)
-                        val n1 = neighbors[0]
-                        val n2 = neighbors[1]
-                        if (Dijkstra(graph, n1).negativeVertex(n2, it))
-                            graph.removeVertex(it)
-                    }
+                    vertexTest(it)
                 }
+    }
+
+    private fun vertexTest(v: Node) {
+        if (v.weight <= 0
+                && graph.neighborListOf(v).size == 2
+                && graph.edgesOf(v).all { it.weight <= 0 }) {
+            val neighbors = graph.neighborListOf(v)
+            val n1 = neighbors[0]
+            val n2 = neighbors[1]
+            if (Dijkstra(graph, n1).negativeVertex(n2, v))
+                graph.removeVertex(v)
+        }
     }
 
     private fun negativeEdges() {
@@ -77,7 +81,6 @@ class Preprocessor(val graph: Graph) {
                 }
     }
 
-
     private fun cns() {
         val toRemove = mutableSetOf<Node>()
         val vertexSet = graph.vertexSet()
@@ -86,6 +89,7 @@ class Preprocessor(val graph: Graph) {
                 toRemove.addAll(cnsTest(v))
             }
         }
+        toRemove.forEach { graph.removeVertex(it) }
     }
 
     private fun cnsTest(v: Node): Set<Node> {
@@ -93,13 +97,13 @@ class Preprocessor(val graph: Graph) {
         val (w, wSum) = goodNeighbors(v)
         for (u in w) {
             for (cand in graph.neighborListOf(u).filter { !w.contains(it) }) {
+                if (res.contains(cand)) continue
+                val bestSum = cand.weight + graph.edgesOf(cand)
+                        .sumByDouble { Math.max(it.weight, 0.0) }
+                if (bestSum >= 0) continue
                 val candN = graph.neighborListOf(cand)
-                if (w.containsAll(candN)) {
-                    val bestSum = cand.weight + graph.edgesOf(cand)
-                            .sumByDouble { Math.max(it.weight, 0.0) }
-                    if (bestSum < wSum) {
-                        res.add(cand)
-                    }
+                if (w.containsAll(candN) && bestSum < wSum) {
+                    res.add(cand)
                 }
             }
         }
@@ -109,18 +113,16 @@ class Preprocessor(val graph: Graph) {
     data class Neighbors(val w: MutableSet<Node>, val sum: Double)
 
     private fun goodNeighbors(v: Node): Neighbors {
-        var wSum = 0.0
+        var wSum = minOf(v.weight, 0.0)
         val w = mutableSetOf(v)
         for (u in graph.neighborListOf(v)) {
             val edges = graph.getAllEdges(u, v)
             edges.sortBy { -it.weight }
-            val pos = edges.takeWhile { it.weight >= 0 }.map { it.weight }
-            if (!pos.isEmpty()) {
-                wSum += u.weight
-                wSum += pos.sum()
-                w.add(u)
-            } else if (u.weight >= 0) {
-                wSum += u.weight + edges[0].weight
+            val posSum = u.weight + edges[0].weight + edges.drop(1)
+                    .takeWhile { it.weight >= 0 }
+                    .sumByDouble { it.weight }
+            if (posSum >= 0) {
+                wSum += edges.dropWhile { it.weight >= 0 }.sumByDouble { it.weight }
                 w.add(u)
             }
         }
