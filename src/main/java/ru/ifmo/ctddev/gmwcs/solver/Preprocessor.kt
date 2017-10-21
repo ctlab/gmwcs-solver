@@ -13,7 +13,12 @@ fun Graph.getAdjacent(e: Edge) = Pair(this.getEdgeSource(e), this.getEdgeTarget(
 typealias Step<T> = (Graph, MutableSet<T>) -> Set<T>
 typealias Reduction<T> = (Graph, Set<T>) -> Unit
 
-data class ReductionSequence<T : Elem>(val step: Step<T>, val reduction: Reduction<T>)
+class ReductionSequence<T : Elem>(val step: Step<T>, val reduction: Reduction<T>) {
+    fun apply(graph: Graph) {
+        val res = step(graph, mutableSetOf())
+        reduction(graph, res)
+    }
+}
 
 class ReductionStep<T : Elem>(val graph: Graph, private val step: Step<T>, private val reduction: Reduction<T>) {
     fun apply() {
@@ -210,9 +215,7 @@ class Preprocessor(val graph: Graph,
 
     fun preprocess() {
         for (red in reductions) {
-            val toRemove = red.step(graph, mutableSetOf() as Nothing)
-            red.reduction(graph, mutableSetOf())
+            red.apply(graph)
         }
-
     }
 }
