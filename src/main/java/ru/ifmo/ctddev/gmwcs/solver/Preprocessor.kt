@@ -8,20 +8,19 @@ import ru.ifmo.ctddev.gmwcs.graph.Node
 /**
  * Created by Nikolay Poperechnyi on 03/10/2017.
  */
+
 fun Graph.getAdjacent(e: Edge) = Pair(this.getEdgeSource(e), this.getEdgeTarget(e))
+
+typealias EdgeSet = Set<Edge>
+typealias MutableEdgeSet = MutableSet<Edge>
+typealias NodeSet = Set<Node>
+typealias MutableNodeSet = MutableSet<Node>
 
 typealias Step<T> = (Graph, MutableSet<T>) -> Set<T>
 typealias Reduction<T> = (Graph, Set<T>) -> Unit
 
-class ReductionSequence<T : Elem>(val step: Step<T>, val reduction: Reduction<T>) {
+class ReductionSequence<T : Elem>(private val step: Step<T>, private val reduction: Reduction<T>) {
     fun apply(graph: Graph) {
-        val res = step(graph, mutableSetOf())
-        reduction(graph, res)
-    }
-}
-
-class ReductionStep<T : Elem>(val graph: Graph, private val step: Step<T>, private val reduction: Reduction<T>) {
-    fun apply() {
         val res = step(graph, mutableSetOf())
         reduction(graph, res)
     }
@@ -39,9 +38,13 @@ val negE = ReductionSequence(::negativeEdges, ::logAndRemoveEdges)
 
 val cns = ReductionSequence(::cns, ::logAndRemoveNodes)
 
+
 val allSteps: Reductions = listOf(mergeNeg, mergePos, negV, negE, cns)
 
-fun mergeNegative(graph: Graph, toRemove: MutableSet<Node> = mutableSetOf()): Set<Node> {
+// val allSteps: Reductions = listOf(mergeNeg)
+//val allSteps: Reductions = emptyList()
+
+fun mergeNegative(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
     for (v in graph.vertexSet().toList()) {
         if (v.weight > 0 || graph.degreeOf(v) != 2) {
             continue
@@ -49,9 +52,9 @@ fun mergeNegative(graph: Graph, toRemove: MutableSet<Node> = mutableSetOf()): Se
         val edges = graph.edgesOf(v).toTypedArray()
         if (edges[0].weight > 0 || edges[1].weight > 0)
             continue
-        val nodes = edges.map { graph.opposite(v, it) }
-        val (l, r) = Pair(nodes[0], nodes[1])
-        toRemove.add(v)
+        val l = graph.opposite(v, edges[0])
+        val r = graph.opposite(v, edges[1])
+        toRemove.add(v) //TODO: 2 nodes 1 edge invariant broken here
         graph.removeVertex(v)
         if (l != r) {
             edges[0].absorb(v)
@@ -83,7 +86,7 @@ fun merge(graph: Graph, e: Edge, l: Node, r: Node) {
 
 fun contract(graph: Graph, e: Edge) {
     val (main, aux) = graph.getAdjacent(e)
-    val auxEdges = graph.edgesOf(aux).toMutableSet()
+    val auxEdges = graph.edgesOf(aux)
     auxEdges.remove(e)
     for (edge in auxEdges) {
         val opposite = graph.opposite(aux, edge)
@@ -97,15 +100,11 @@ fun contract(graph: Graph, e: Edge) {
                 continue
             }
             graph.addEdge(main, opposite, edge)
-        } else {
-            if (edge.weight >= 0 && m.weight >= 0) {
-                m.absorb(edge)
-            } else {
-                if (m.weight < edge.weight) {
-                    graph.removeEdge(m)
-                    graph.addEdge(main, opposite, edge)
-                }
-            }
+        } else if (edge.weight >= 0 && m.weight >= 0) {
+            m.absorb(edge)
+        } else if (m.weight <= edge.weight) {
+            graph.removeEdge(m)
+            graph.addEdge(main, opposite, edge)
         }
     }
     graph.removeVertex(aux)
@@ -113,11 +112,11 @@ fun contract(graph: Graph, e: Edge) {
     main.absorb(e)
 }
 
-fun negativeVertices(graph: Graph, toRemove: MutableSet<Node> = mutableSetOf()): Set<Node> {
+fun negativeVertices(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
     return graph.vertexSet().filter { vertexTest(graph, it) }.toSet()
 }
 
-fun vertexTest(graph: Graph, v: Node): Boolean {
+private fun vertexTest(graph: Graph, v: Node): Boolean {
     return if (v.weight <= 0
             && graph.neighborListOf(v).size == 2
             && graph.edgesOf(v).all { it.weight <= 0 }) {
@@ -130,44 +129,60 @@ fun vertexTest(graph: Graph, v: Node): Boolean {
     }
 }
 
-private fun cnsTest(graph: Graph, v: Node): Set<Node> {
-    val res = mutableSetOf<Node>()
-    val (w, wSum) = goodNeighbors(graph, v)
+fun cns(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
+    graph.vertexSet()
+            .forEach {
+                if (!toRemove.contains(it))
+                    cnsTest(graph, it, toRemove)
+            }
+    return toRemove
+}
+
+private fun cnsTest(graph: Graph, v: Node, toRemove: MutableNodeSet) {
+    val (w, wSum, wNeighbors) = constructW(graph, v, toRemove)
     for (u in w) {
         for (cand in graph.neighborListOf(u).filter { !w.contains(it) }) {
-            if (res.contains(cand)) continue
+            if (toRemove.contains(cand)) continue
             val bestSum = cand.weight + graph.edgesOf(cand)
                     .sumByDouble { Math.max(it.weight, 0.0) }
             if (bestSum >= 0) continue
-            val candN = graph.neighborListOf(cand)
-            if (w.containsAll(candN) && bestSum < wSum) {
-                res.add(cand)
+            val candN = graph.neighborListOf(cand).filter { !w.contains(it) }
+            if (wNeighbors.containsAll(candN) && bestSum < wSum) {
+                toRemove.add(cand)
             }
         }
     }
-    return res
 }
 
-data class Neighbors(val w: MutableSet<Node>, val sum: Double)
+private data class ConnectedComponent(val w: MutableNodeSet,
+                                      val sum: Double,
+                                      val wNeighbors: MutableNodeSet)
 
-fun goodNeighbors(graph: Graph, v: Node): Neighbors {
+private fun constructW(graph: Graph, v: Node, toRemove: MutableNodeSet): ConnectedComponent {
     var wSum = minOf(v.weight, 0.0)
     val w = mutableSetOf(v)
-    for (u in graph.neighborListOf(v)) {
-        val edges = graph.getAllEdges(u, v)
-        edges.sortBy { -it.weight }
-        val posSum = u.weight + edges[0].weight + edges.drop(1)
-                .takeWhile { it.weight >= 0 }
-                .sumByDouble { it.weight }
-        if (posSum >= 0) {
-            wSum += edges.dropWhile { it.weight >= 0 }.sumByDouble { it.weight }
+    for (u in graph.neighborListOf(v).filter { !toRemove.contains(it) }) {
+        val edge = graph.getEdge(u, v)
+        val weightSum = edge.weight + u.weight
+        if (weightSum >= 0) {
+            wSum += minOf(edge.weight, 0.0) + minOf(u.weight, 0.0)
             w.add(u)
         }
     }
-    return Neighbors(w, wSum)
+    val wNeighbors = mutableSetOf<Node>()
+    for (u in w) {
+        val nbs = graph.neighborListOf(u)
+        for (nb in nbs) {
+            if (!w.contains(nb) && !toRemove.contains(nb)) {
+                wNeighbors.add(nb)
+                wSum += minOf(graph.getEdge(nb, u).weight, 0.0)
+            }
+        }
+    }
+    return ConnectedComponent(w, wSum, wNeighbors)
 }
 
-fun negativeEdges(graph: Graph, toRemove: MutableSet<Edge> = mutableSetOf()): Set<Edge> {
+fun negativeEdges(graph: Graph, toRemove: MutableEdgeSet = mutableSetOf()): EdgeSet {
     graph.vertexSet()
             .forEach { n ->
                 val neighs = graph.edgesOf(n)
@@ -180,23 +195,12 @@ fun negativeEdges(graph: Graph, toRemove: MutableSet<Edge> = mutableSetOf()): Se
     return toRemove
 }
 
-fun cns(graph: Graph, toRemove: MutableSet<Node> = mutableSetOf()): Set<Node> {
-    graph.vertexSet()
-            .forEach {
-                if (!toRemove.contains(it))
-                    toRemove.addAll(cnsTest(graph, it))
-            }
-    return toRemove
-}
-
 private fun logEdges(graph: Graph, edges: Set<Edge>) {
-    val sz = edges.size
-    println("$sz edges to remove")
+    println("${edges.size} edges to remove")
 }
 
 private fun logNodes(graph: Graph, nodes: Set<Node>) {
-    val sz = nodes.size
-    println("$sz nodes to remove")
+    println("${nodes.size} nodes to remove")
 }
 
 private fun logAndRemoveEdges(graph: Graph, edges: Set<Edge>) {
@@ -209,13 +213,18 @@ private fun logAndRemoveNodes(graph: Graph, nodes: Set<Node>) {
     nodes.forEach { graph.removeVertex(it) }
 }
 
+fun preprocess(graph: Graph) {
+    Preprocessor(graph).preprocess()
+}
+
 class Preprocessor(val graph: Graph,
                    private val reductions: Reductions = allSteps,
-                   private val logLevel: Int = 1) {
+                   private val logLevel: Int = 0) {
 
     fun preprocess() {
         for (red in reductions) {
             red.apply(graph)
         }
     }
+
 }

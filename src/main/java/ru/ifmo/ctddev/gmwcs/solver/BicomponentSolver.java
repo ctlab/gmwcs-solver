@@ -6,6 +6,8 @@ import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
 
+import static ru.ifmo.ctddev.gmwcs.solver.PreprocessorKt.preprocess;
+
 public class BicomponentSolver implements Solver {
     private TimeLimit rooted;
     private TimeLimit biggest;
@@ -37,7 +39,7 @@ public class BicomponentSolver implements Solver {
     public List<Elem> solve(Graph graph) throws SolverException {
         Graph g = graph;
         graph = graph.subgraph(graph.vertexSet());
-        new Preprocessor(graph).preprocess();
+        preprocess(graph);
         if (!silence) {
             System.out.print("Preprocessing deleted " + (g.vertexSet().size() - graph.vertexSet().size()) + " nodes ");
             System.out.println("and " + (g.edgeSet().size() - graph.edgeSet().size()) + " edges.");
