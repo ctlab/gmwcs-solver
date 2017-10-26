@@ -1,6 +1,10 @@
 package ru.ifmo.ctddev.gmwcs.solver
 
+import ru.ifmo.ctddev.gmwcs.graph.Elem
 import ru.ifmo.ctddev.gmwcs.graph.Graph
+import ru.ifmo.ctddev.gmwcs.graph.SimpleIO
+import java.io.File
+import java.io.FileReader
 import java.time.Clock
 
 /**
@@ -34,4 +38,26 @@ private fun benchmarkGraphPreprocessing(graph: Graph, preprocessing: Reductions)
             , sizeAfter.second - sizeBefore.second)
     println("----------------Results ----------------")
     println("Time: $timeDelta\nRemoved nodes, edges: $delta") // Todo
+}
+
+val reductions = mapOf(
+        "mergeNeg" to mergeNeg,
+        "mergePos" to mergePos,
+        "npv" to negV,
+        "npe" to negE,
+        "cns" to cns
+)
+
+fun main(args: Array<String>) {
+    val nodeFile = File(args[0])
+    val edgeFile = File(args[1])
+    val rulesFile = File(args[2])
+    val graphIO = SimpleIO(nodeFile, File(nodeFile.toString() + ".out"),
+            edgeFile, File(edgeFile.toString() + ".out"))
+    val namedGraph = NamedGraph(graphIO.read(), "Graph 1")
+    val tests = mutableListOf<Reductions>()
+    FileReader(rulesFile).forEachLine {
+        tests.add(it.split(" ").mapNotNull { reductions[it] })
+    }
+    benchmarkGraphPreprocessing(namedGraph.graph, tests[0])
 }
