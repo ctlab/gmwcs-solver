@@ -1,11 +1,9 @@
 package ru.ifmo.ctddev.gmwcs.solver
 
-import ru.ifmo.ctddev.gmwcs.graph.Elem
 import ru.ifmo.ctddev.gmwcs.graph.Graph
 import ru.ifmo.ctddev.gmwcs.graph.SimpleIO
 import java.io.File
 import java.io.FileReader
-import java.time.Clock
 
 /**
  * Created by Nikolay Poperechnyi on 19/10/2017.

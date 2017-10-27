@@ -78,13 +78,13 @@ fun mergePositive(graph: Graph, toRemove: MutableSet<Node> = mutableSetOf()): Se
     return toRemove
 }
 
-fun merge(graph: Graph, e: Edge, l: Node, r: Node) {
+private fun merge(graph: Graph, e: Edge, l: Node, r: Node) {
     if (!listOf(l, r).containsAll(graph.getAdjacent(e).toList()))
         throw IllegalArgumentException()
     contract(graph, e)
 }
 
-fun contract(graph: Graph, e: Edge) {
+private fun contract(graph: Graph, e: Edge) {
     val (main, aux) = graph.getAdjacent(e)
     val auxEdges = graph.edgesOf(aux)
     auxEdges.remove(e)
@@ -193,6 +193,25 @@ fun negativeEdges(graph: Graph, toRemove: MutableEdgeSet = mutableSetOf()): Edge
                             .forEach { toRemove.add(it) }
             }
     return toRemove
+}
+
+fun negativeVertices(k: Int, graph: Graph, toRemove: MutableNodeSet): NodeSet {
+    if (k < 2) throw IllegalArgumentException("k must be >= 2")
+    if (k == 2) {
+        return negativeVertices(graph, toRemove)
+    }
+    graph.vertexSet().filter {
+        it.weight <= 0 && 3 <= graph.degreeOf(it) && graph.degreeOf(it) <= k
+    }.filterTo(toRemove) { nvkTest(graph, it) }
+    return toRemove
+}
+
+fun nvkTest(graph: Graph, v: Node): Boolean {
+    val vWeight = minOf(0.0, v.weight) + graph.edgesOf(v).map { minOf(0.0, it.weight) }.sum()
+    val delta = graph.neighborListOf(v).toSet()
+    val subgraph = graph.subgraph(graph.vertexSet().minus(v))
+    val ds = delta.map { Pair(it, Dijkstra(subgraph, it).distances(delta)) }.toMap()
+    return MST(ds).solve() > vWeight
 }
 
 private fun logEdges(graph: Graph, edges: Set<Edge>) {

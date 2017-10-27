@@ -45,6 +45,11 @@ class Dijkstra(private val graph: Graph, private val from: Node) {
         }
     }
 
+    fun distances(neighbors: Set<Node>): Map<Node, Double> {
+        solve(neighbors)
+        return neighbors.map({ Pair(it, d[it.num] + p(from)) }).toMap()
+    }
+
     fun negativeEdges(neighbors: Set<Node>): List<Edge> {
         solve(neighbors)
         return graph.edgesOf(from).filter {
