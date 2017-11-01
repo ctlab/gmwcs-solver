@@ -19,6 +19,11 @@ typealias MutableNodeSet = MutableSet<Node>
 typealias Step<T> = (Graph, MutableSet<T>) -> Set<T>
 typealias Reduction<T> = (Graph, Set<T>) -> Unit
 
+private fun <T> powerset(left: Collection<T>, acc: Set<Set<T>> = setOf(emptySet())): Set<Set<T>> = when {
+    left.isEmpty() -> acc
+    else -> powerset(left.drop(1), acc + acc.map { it + left.first() })
+}
+
 class ReductionSequence<T : Elem>(private val step: Step<T>, private val reduction: Reduction<T>) {
     fun apply(graph: Graph) {
         val res = step(graph, mutableSetOf())
@@ -38,8 +43,11 @@ val negE = ReductionSequence(::negativeEdges, ::logAndRemoveEdges)
 
 val cns = ReductionSequence(::cns, ::logAndRemoveNodes)
 
+val nvk = ReductionSequence(
+        { graph, toRemove -> negativeVertices(3, graph, toRemove) }
+        , ::logAndRemoveNodes)
 
-val allSteps: Reductions = listOf(mergeNeg, mergePos, negV, negE, cns)
+val allSteps: Reductions = listOf(mergeNeg, mergePos, negV, nvk, negE, cns)
 
 // val allSteps: Reductions = listOf(mergeNeg)
 //val allSteps: Reductions = emptyList()
@@ -207,11 +215,20 @@ fun negativeVertices(k: Int, graph: Graph, toRemove: MutableNodeSet): NodeSet {
 }
 
 fun nvkTest(graph: Graph, v: Node): Boolean {
-    val vWeight = minOf(0.0, v.weight) + graph.edgesOf(v).map { minOf(0.0, it.weight) }.sum()
+    val vWeight = v.weight + graph.edgesOf(v).map { maxOf(0.0, it.weight) }.sum()
+    if (vWeight >= 0) return false
     val delta = graph.neighborListOf(v).toSet()
     val subgraph = graph.subgraph(graph.vertexSet().minus(v))
-    val ds = delta.map { Pair(it, Dijkstra(subgraph, it).distances(delta)) }.toMap()
-    return MST(ds).solve() > vWeight
+    val ds = delta.map {
+        Pair(it, Dijkstra(subgraph, it).negativeDistances(delta))
+    }.toSet()
+    val powerset = powerset(ds).map { it.toMap() }
+            .map {
+                it.mapValues { (_, v) ->
+                    v.filterKeys { k -> it.containsKey(k) }
+                }
+            }
+    return powerset.all { it.size < 2 || MST(it).solve() > vWeight }
 }
 
 private fun logEdges(graph: Graph, edges: Set<Edge>) {
