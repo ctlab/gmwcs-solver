@@ -4,9 +4,11 @@ package ru.ifmo.ctddev.gmwcs.graph_kt
  * Created by Nikolay Poperechnyi on 02/11/2017.
  */
 
+private typealias LinkSequence = Sequence<Link>
+
 private typealias LinkList = MutableList<Link>
 
-private typealias AdjacencyList = MutableMap<Node, Edge>
+private typealias AdjacencyList = MutableMap<Edge, Node>
 
 private typealias AdjacencyMatrix = MutableMap<Node, AdjacencyList>
 
@@ -33,10 +35,11 @@ class Graph {
         assert(nodeEdges.containsKey(u))
         assert(nodeEdges.containsKey(v))
         addLink(u, Link(e, u, v))
-        addLink(v, Link(e, v, u))
+        if (u != v)
+            addLink(v, Link(e, v, u))
         addLink(e, Link(e, u, v))
-        nodeEdges[u]!![v] = e
-        nodeEdges[v]!![u] = e
+        nodeEdges[u]!![e] = v
+        nodeEdges[v]!![e] = u
     }
 
     private fun addLink(e: Edge, l: Link) {
@@ -55,7 +58,7 @@ class Graph {
         return nodeLinks[v].orEmpty().map { it.v }
     }
 
-    fun getNode(u: Node, e: Edge): Node {
+    fun getOpposite(u: Node, e: Edge): Node {
         assert(edgeLinks.containsKey(e))
         val link = edgeLinks[e]
         return when (u == link!!.u) {
@@ -64,17 +67,24 @@ class Graph {
         }
     }
 
+    fun getAllEdges(u: Node, v: Node): EdgeList {
+        return edgeSequence(u, v).toList()
+    }
+
     fun getEdge(u: Node, v: Node): Edge? {
-        assert(nodeEdges.containsKey(u))
-        return nodeEdges[u]!![v]
+        return edgeSequence(u, v).firstOrNull()
+    }
+
+    fun getNodes(e: Edge): Pair<Node, Node> {
+        assert(edgeLinks.containsKey(e))
+        return Pair(edgeLinks[e]!!.u, edgeLinks[e]!!.v)
     }
 
     fun removeNode(v: Node) {
         assert(nodeLinks.containsKey(v))
-        for ((e, v1, u) in nodeLinks[v]!!) {
+        for ((e, v1, _) in nodeLinks[v]!!.toList()) {
             assert(v1 == v)
-            nodeLinks[u]!!.removeAll {it.v == v}
-            edgeLinks.remove(e)
+            removeEdge(e)
         }
         nodeLinks.remove(v)
     }
@@ -82,9 +92,38 @@ class Graph {
     fun removeEdge(e: Edge) {
         assert(edgeLinks.containsKey(e))
         val (_, u, v) = edgeLinks[e]!!
-        nodeLinks[u]!!.removeAll {it.u == u}
-        nodeLinks[v]!!.removeAll {it.u == v}
+        nodeLinks[u]!!.removeAll { it.e == e }
+        nodeLinks[v]!!.removeAll { it.e == e }
         edgeLinks.remove(e)
+    }
+
+    private fun linkSequence(n: Node): LinkSequence {
+        assert(nodeLinks.containsKey(n))
+        return nodeLinks[n]!!.asSequence()
+    }
+
+    private fun edgeSequence(u: Node, v: Node): EdgeSequence {
+        return linkSequence(u).filter { it.v == v }.map { it.e }
+    }
+
+    fun dfs(u: Node) {
+        return dfs(u, {}, mutableSetOf())
+    }
+
+    fun <T> dfs(u: Node, f: (NodeSet) -> T,
+                visited: MutableNodeSet = mutableSetOf()) {
+        visited.add(u)
+        f(visited)
+        neighborsOf(u).filterNot { visited.contains(it) }
+                .forEach { dfs(it, f, visited) }
+    }
+
+    fun edgeSet(): EdgeSet {
+        return edgeLinks.keys
+    }
+
+    fun nodeSet(): NodeSet {
+        return nodeLinks.keys
     }
 
 }

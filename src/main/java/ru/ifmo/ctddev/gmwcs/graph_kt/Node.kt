@@ -12,8 +12,12 @@ class Node(num: Int, w: Double) : Elem(num, w) {
 
 }
 
+typealias NodeSequence = Sequence<Node>
 
 typealias NodeList = List<Node>
+
 typealias MutableNodeList = MutableList<Node>
+
 typealias NodeSet = Set<Node>
+
 typealias MutableNodeSet = MutableSet<Node>

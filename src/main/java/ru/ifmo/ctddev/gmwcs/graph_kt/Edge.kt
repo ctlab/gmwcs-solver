@@ -12,7 +12,12 @@ class Edge(num: Int, w: Double) : Elem(num, w) {
 
 }
 
+typealias EdgeSequence = Sequence<Edge>
+
 typealias EdgeList = List<Edge>
+
 typealias MutableEdgeList = MutableList<Edge>
+
 typealias EdgeSet = Set<Edge>
+
 typealias MutableEdgeSet = MutableSet<Edge>
