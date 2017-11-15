@@ -72,5 +72,26 @@ class GraphSpec : StringSpec() {
             for (comp in 0..N / compSize)
                 dfsG.dfs(dfsNodes[comp]).size shouldBe 150
         }
+        "neighborsOf(u) contains v -> neighborsOf(v) contains u" {
+            for (n in nodes) {
+                val near = g.neighborsOf(n)
+                for (neigh in near) {
+                    g.neighborsOf(neigh).contains(n) shouldBe true
+                }
+            }
+        }
+        "opposite(u) = v -> opposite(v) = u" {
+            for (e in g.edgeSet()) {
+                val (u, v) = g.getNodes(e)
+                g.getOpposite(u, e) shouldBe v
+                g.getOpposite(v, e) shouldBe u
+            }
+        }
+        "expected subgraph is returned" {
+            val g2 = g.subgraph(g.nodeSet())
+            g2.edgeSet().containsAll(g.edgeSet()) shouldBe true
+            val g3 = g.subgraph(g.nodeSet().filter { it.num % 2 == 1 })
+            g3.nodeSet().all { it.num % 2 == 1 } shouldBe true
+        }
     }
 }

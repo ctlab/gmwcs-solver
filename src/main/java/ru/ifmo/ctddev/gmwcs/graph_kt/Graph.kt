@@ -119,6 +119,24 @@ class Graph {
         return visited
     }
 
+    fun subgraph(nodes: Collection<Node>): Graph {
+        return subgraph(nodes,
+                nodes.flatMap {
+                    edgesOf(it)
+                            .filter { nodes.containsAll(getNodes(it).toList()) }
+                }.toSet())
+    }
+
+    fun subgraph(nodes: Collection<Node>, edges: Collection<Edge>): Graph {
+        val g = Graph()
+        nodes.forEach { g.addNode(it) }
+        edges.forEach {
+            val (u, v) = getNodes(it)
+            g.addEdge(it, u, v)
+        }
+        return g
+    }
+
     fun edgeSet(): EdgeSet {
         return edgeLinks.keys
     }
@@ -126,5 +144,6 @@ class Graph {
     fun nodeSet(): NodeSet {
         return nodeLinks.keys
     }
+
 
 }
