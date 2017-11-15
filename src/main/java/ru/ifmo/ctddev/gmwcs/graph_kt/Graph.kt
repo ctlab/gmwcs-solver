@@ -106,16 +106,17 @@ class Graph {
         return linkSequence(u).filter { it.v == v }.map { it.e }
     }
 
-    fun dfs(u: Node) {
+    fun dfs(u: Node): Set<Node> {
         return dfs(u, {}, mutableSetOf())
     }
 
     fun <T> dfs(u: Node, f: (NodeSet) -> T,
-                visited: MutableNodeSet = mutableSetOf()) {
+                visited: MutableNodeSet = mutableSetOf()): Set<Node> {
         visited.add(u)
         f(visited)
         neighborsOf(u).filterNot { visited.contains(it) }
                 .forEach { dfs(it, f, visited) }
+        return visited
     }
 
     fun edgeSet(): EdgeSet {
