@@ -137,6 +137,16 @@ class Graph {
         return g
     }
 
+    fun connectedComponents(): Set<NodeSet> {
+        val res = mutableSetOf<NodeSet>()
+        for (node in nodeSet()) {
+            if (!res.any {it.contains(node) }) {
+                res.add(dfs(node))
+            }
+        }
+        return res
+    }
+
     fun edgeSet(): EdgeSet {
         return edgeLinks.keys
     }
