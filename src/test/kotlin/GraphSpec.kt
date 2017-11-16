@@ -93,5 +93,10 @@ class GraphSpec : StringSpec() {
             val g3 = g.subgraph(g.nodeSet().filter { it.num % 2 == 1 })
             g3.nodeSet().all { it.num % 2 == 1 } shouldBe true
         }
+        "connected components" {
+            val isolated = Graph()
+            nodes.take(100).forEach { isolated.addNode(it) }
+            isolated.connectedComponents().size shouldBe(100)
+        } //TODO: better test for connected components
     }
 }

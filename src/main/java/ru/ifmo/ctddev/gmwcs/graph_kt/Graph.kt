@@ -139,11 +139,9 @@ class Graph {
 
     fun connectedComponents(): Set<NodeSet> {
         val res = mutableSetOf<NodeSet>()
-        for (node in nodeSet()) {
-            if (!res.any {it.contains(node) }) {
-                res.add(dfs(node))
-            }
-        }
+        nodeSet()
+                .filterNot { node -> res.any {it.contains(node) } }
+                .forEach { res.add(dfs(it)) }
         return res
     }
 

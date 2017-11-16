@@ -44,10 +44,10 @@ val negE = ReductionSequence(::negativeEdges, ::logAndRemoveEdges)
 val cns = ReductionSequence(::cns, ::logAndRemoveNodes)
 
 val nvk = ReductionSequence(
-        { graph, toRemove -> negativeVertices(3, graph, toRemove) }
+        { graph, toRemove -> negativeVertices(4, graph, toRemove) }
         , ::logAndRemoveNodes)
 
-val allSteps: Reductions = listOf(mergeNeg, mergePos, negV, nvk, negE, cns)
+val allSteps: Reductions = listOf(mergeNeg, mergePos, nvk, negE, cns)
 
 // val allSteps: Reductions = listOf(mergeNeg)
 //val allSteps: Reductions = emptyList()
@@ -149,8 +149,7 @@ fun cns(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
 private fun cnsTest(graph: Graph, v: Node, toRemove: MutableNodeSet) {
     val (w, wSum, wNeighbors) = constructW(graph, v, toRemove)
     for (u in w) {
-        for (cand in graph.neighborListOf(u).filter { !w.contains(it) }) {
-            if (toRemove.contains(cand)) continue
+        for (cand in graph.neighborListOf(u).asSequence().filter { !w.contains(it) }) {
             val bestSum = cand.weight + graph.edgesOf(cand)
                     .sumByDouble { Math.max(it.weight, 0.0) }
             if (bestSum >= 0) continue
@@ -169,14 +168,18 @@ private data class ConnectedComponent(val w: MutableNodeSet,
 private fun constructW(graph: Graph, v: Node, toRemove: MutableNodeSet): ConnectedComponent {
     var wSum = minOf(v.weight, 0.0)
     val w = mutableSetOf(v)
-    for (u in graph.neighborListOf(v).filter { !toRemove.contains(it) }) {
-        val edge = graph.getEdge(u, v)
-        val weightSum = edge.weight + u.weight
-        if (weightSum >= 0) {
-            wSum += minOf(edge.weight, 0.0) + minOf(u.weight, 0.0)
-            w.add(u)
+    for (i in 1..2)
+        for (v in w.toList()) {
+            for (u in graph.neighborListOf(v)
+                    .filter { !toRemove.contains(it) && !w.contains(it)}) {
+                val edge = graph.getEdge(u, v)
+                val weightSum = edge.weight + u.weight
+                if (weightSum >= 0) {
+                    wSum += minOf(edge.weight, 0.0) + minOf(u.weight, 0.0)
+                    w.add(u)
+                }
+            }
         }
-    }
     val wNeighbors = mutableSetOf<Node>()
     for (u in w) {
         val nbs = graph.neighborListOf(u)
