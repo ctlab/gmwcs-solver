@@ -44,7 +44,7 @@ val negE = ReductionSequence(::negativeEdges, ::logAndRemoveEdges)
 val cns = ReductionSequence(::cns, ::logAndRemoveNodes)
 
 val nvk = ReductionSequence(
-        { graph, toRemove -> negativeVertices(4, graph, toRemove) }
+        { graph, toRemove -> negativeVertices(5, graph, toRemove) }
         , ::logAndRemoveNodes)
 
 val allSteps: Reductions = listOf(mergeNeg, mergePos, nvk, negE, cns)
@@ -120,8 +120,10 @@ private fun contract(graph: Graph, e: Edge) {
     main.absorb(e)
 }
 
-fun negativeVertices(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
-    return graph.vertexSet().filter { vertexTest(graph, it) }.toSet()
+fun negativeVertices(graph: Graph,
+                     toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
+    graph.vertexSet().filterTo(toRemove, { vertexTest(graph, it) })
+    return toRemove
 }
 
 private fun vertexTest(graph: Graph, v: Node): Boolean {
@@ -165,13 +167,14 @@ private data class ConnectedComponent(val w: MutableNodeSet,
                                       val sum: Double,
                                       val wNeighbors: MutableNodeSet)
 
-private fun constructW(graph: Graph, v: Node, toRemove: MutableNodeSet): ConnectedComponent {
-    var wSum = minOf(v.weight, 0.0)
-    val w = mutableSetOf(v)
-    for (i in 1..2)
+private fun constructW(graph: Graph, n: Node,
+                       toRemove: MutableNodeSet): ConnectedComponent {
+    var wSum = minOf(n.weight, 0.0)
+    val w = mutableSetOf(n)
+    for (i in 1..2) //todo: test another W size
         for (v in w.toList()) {
             for (u in graph.neighborListOf(v)
-                    .filter { !toRemove.contains(it) && !w.contains(it)}) {
+                    .filter { !toRemove.contains(it) && !w.contains(it) }) {
                 val edge = graph.getEdge(u, v)
                 val weightSum = edge.weight + u.weight
                 if (weightSum >= 0) {
@@ -211,27 +214,28 @@ fun negativeVertices(k: Int, graph: Graph, toRemove: MutableNodeSet): NodeSet {
     if (k == 2) {
         return negativeVertices(graph, toRemove)
     }
-    graph.vertexSet().filter {
-        it.weight <= 0 && 3 <= graph.degreeOf(it) && graph.degreeOf(it) <= k
-    }.filterTo(toRemove) { nvkTest(graph, it) }
+    graph.vertexSet().filterTo(toRemove) {
+        it.weight <= 0
+                && 3 <= graph.degreeOf(it) && graph.degreeOf(it) <= k
+                && nvkTest(graph, it)
+    }
     return toRemove
 }
 
 fun nvkTest(graph: Graph, v: Node): Boolean {
-    val vWeight = v.weight + graph.edgesOf(v).map { maxOf(0.0, it.weight) }.sum()
-    if (vWeight >= 0) return false
+    val weight = v.weight + graph.edgesOf(v).map { maxOf(0.0, it.weight) }.sum()
+    if (weight >= 0) return false
     val delta = graph.neighborListOf(v).toSet()
     val subgraph = graph.subgraph(graph.vertexSet().minus(v))
     val ds = delta.map {
         Pair(it, Dijkstra(subgraph, it).negativeDistances(delta))
     }.toSet()
     val powerset = powerset(ds).map { it.toMap() }
-            .map {
-                it.mapValues { (_, v) ->
+            .map { it.mapValues { (_, v) ->
                     v.filterKeys { k -> it.containsKey(k) }
                 }
             }
-    return powerset.all { it.size < 2 || MST(it).solve() > vWeight }
+    return powerset.all { it.size < 2 || MST(it).solve() > weight }
 }
 
 private fun logEdges(graph: Graph, edges: Set<Edge>) {
@@ -257,8 +261,7 @@ fun preprocess(graph: Graph) {
 }
 
 class Preprocessor(val graph: Graph,
-                   private val reductions: Reductions = allSteps,
-                   private val logLevel: Int = 0) {
+                   private val reductions: Reductions = allSteps) {
 
     fun preprocess() {
         for (red in reductions) {
