@@ -47,7 +47,7 @@ val nvk = ReductionSequence(
         { graph, toRemove -> negativeVertices(5, graph, toRemove) }
         , ::logAndRemoveNodes)
 
-val allSteps: Reductions = listOf(mergeNeg, mergePos, nvk, negE, cns)
+val allSteps: Reductions = listOf(mergeNeg, mergePos, /*nvk, */negE, cns)
 
 // val allSteps: Reductions = listOf(mergeNeg)
 //val allSteps: Reductions = emptyList()
@@ -79,16 +79,26 @@ fun mergePositive(graph: Graph, toRemove: MutableSet<Node> = mutableSetOf()): Se
             continue
         val (from, to) = graph.getAdjacent(edge)
         val ew = edge.weight
-        if (ew >= 0 && ew + from.weight >= 0 && ew + to.weight >= 0) {
+        if (from == to) {
+            merge(graph, edge, from);
+        } else if (ew >= 0 && ew + from.weight >= 0 && ew + to.weight >= 0) {
             merge(graph, edge, from, to)
         }
     }
     return toRemove
 }
 
+private fun merge(graph: Graph, e: Edge, n: Node) {
+    if (e.weight > 0) {
+        n.absorb(e)
+    }
+    graph.removeEdge(e)
+}
+
 private fun merge(graph: Graph, e: Edge, l: Node, r: Node) {
     if (!listOf(l, r).containsAll(graph.getAdjacent(e).toList()))
         throw IllegalArgumentException()
+    assert(l != r)
     contract(graph, e)
 }
 
@@ -111,6 +121,7 @@ private fun contract(graph: Graph, e: Edge) {
         } else if (edge.weight >= 0 && m.weight >= 0) {
             m.absorb(edge)
         } else if (m.weight <= edge.weight) {
+            assert(m != edge)
             graph.removeEdge(m)
             graph.addEdge(main, opposite, edge)
         }
@@ -231,7 +242,8 @@ fun nvkTest(graph: Graph, v: Node): Boolean {
         Pair(it, Dijkstra(subgraph, it).negativeDistances(delta))
     }.toSet()
     val powerset = powerset(ds).map { it.toMap() }
-            .map { it.mapValues { (_, v) ->
+            .map {
+                it.mapValues { (_, v) ->
                     v.filterKeys { k -> it.containsKey(k) }
                 }
             }

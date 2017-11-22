@@ -84,7 +84,9 @@ public class Main {
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {
             Graph graph = graphIO.read();
+            //graph.vertexSet().forEach(e -> e.setWeight(-e.getWeight()));
             List<Elem> elems = solver.solve(graph);
+            System.out.println(elems.stream().mapToDouble(Elem::getWeight).sum());
             graphIO.write(elems);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
