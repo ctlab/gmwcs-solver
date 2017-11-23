@@ -47,9 +47,9 @@ val nvk = ReductionSequence(
         { graph, toRemove -> negativeVertices(5, graph, toRemove) }
         , ::logAndRemoveNodes)
 
-//val allSteps: Reductions = listOf(mergeNeg, mergePos, negE, nvk, cns)
+val allSteps: Reductions = listOf(mergeNeg, mergePos, /*negE,*/ negV, nvk, cns)
 
-val allSteps: Reductions = listOf(mergeNeg, mergePos, cns)
+//val allSteps: Reductions = listOf(mergeNeg, mergePos, cns)
 
 //val allSteps: Reductions = emptyList()
 
@@ -74,7 +74,7 @@ fun mergeNegative(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): Node
     return toRemove
 }
 
-fun mergePositive(graph: Graph, toRemove: MutableSet<Node> = mutableSetOf()): Set<Node> {
+fun mergePositive(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
     for (edge in graph.edgeSet().toList()) {
         if (!graph.containsEdge(edge))
             continue
@@ -226,7 +226,7 @@ fun negativeVertices(k: Int, graph: Graph, toRemove: MutableNodeSet): NodeSet {
     if (k == 2) {
         return negativeVertices(graph, toRemove)
     }
-    graph.vertexSet().filterTo(toRemove) {
+    graph.vertexSet().toSet().filterTo(toRemove) {
         it.weight <= 0
                 && 3 <= graph.degreeOf(it) && graph.degreeOf(it) <= k
                 && nvkTest(graph, it)
@@ -239,11 +239,25 @@ fun nvkTest(graph: Graph, v: Node): Boolean {
     val maxW = edgesWs.max()!!
     val weight = v.weight + edgesWs.map { maxOf(0.0, it) }.sum() + //vertex weight + good edges sum
             minOf(maxW, 0.0) // if all edges are negative, take the best possible
-    if (weight >= 0) return false
-    val delta = graph.neighborListOf(v).toSet()
-    val subgraph = graph.subgraph(graph.vertexSet().minus(v))
+    return if (weight >= 0) false
+    else {
+        val delta = graph.neighborListOf(v).toSet()
+        val edges = delta.map { Pair(it, graph.getAllEdges(v, it)) }
+        graph.removeVertex(v)
+        val delete = nvkPredicate(graph, weight, delta)
+        graph.addVertex(v)
+        edges.forEach { (n, es) ->
+            es.forEach {
+                graph.addEdge(n, v, it)
+            }
+        }
+        delete
+    }
+}
+
+private fun nvkPredicate(graph: Graph, weight: Double, delta: NodeSet): Boolean {
     val ds = delta.map {
-        Pair(it, Dijkstra(subgraph, it).negativeDistances(delta))
+        Pair(it, Dijkstra(graph, it).negativeDistances(delta))
     }.toSet()
     val powerset = powerset(ds).map { it.toMap() }
             .map {
@@ -254,20 +268,20 @@ fun nvkTest(graph: Graph, v: Node): Boolean {
     return powerset.all { it.size < 2 || MST(it).solve() > weight }
 }
 
-private fun logEdges(graph: Graph, edges: Set<Edge>) {
+private fun logEdges(graph: Graph, edges: EdgeSet) {
     println("${edges.size} edges to remove")
 }
 
-private fun logNodes(graph: Graph, nodes: Set<Node>) {
+private fun logNodes(graph: Graph, nodes: NodeSet) {
     println("${nodes.size} nodes to remove")
 }
 
-private fun logAndRemoveEdges(graph: Graph, edges: Set<Edge>) {
+private fun logAndRemoveEdges(graph: Graph, edges: EdgeSet) {
     logEdges(graph, edges)
     edges.forEach { graph.removeEdge(it) }
 }
 
-private fun logAndRemoveNodes(graph: Graph, nodes: Set<Node>) {
+private fun logAndRemoveNodes(graph: Graph, nodes: NodeSet) {
     logNodes(graph, nodes)
     nodes.forEach { graph.removeVertex(it) }
 }
