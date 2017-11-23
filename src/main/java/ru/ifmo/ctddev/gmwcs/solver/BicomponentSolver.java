@@ -70,9 +70,7 @@ public class BicomponentSolver implements Solver {
     private List<Elem> extract(List<Elem> sol) {
         List<Elem> res = new ArrayList<>();
         for (Elem u : sol) {
-            for (Elem a : u.getAbsorbed()) {
-                res.add(a);
-            }
+            res.addAll(u.getAbsorbed());
             res.add(u);
         }
         return res;

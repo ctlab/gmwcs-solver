@@ -61,7 +61,6 @@ fun main(args: Array<String>) {
             edgeFile, File(edgeFile.toString() + ".out"))
     val graph = graphIO.read()
     val tests = mutableListOf<NamedReductions>()
-//    graph.edgeSet().forEach { it.weight /= 10 }
     FileReader(rulesFile).forEachLine {
         if (!it.contains('#')) {
             val p = Pair(it, it.split(" ").mapNotNull { reductions[it] })

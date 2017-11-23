@@ -84,7 +84,8 @@ public class Main {
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {
             Graph graph = graphIO.read();
-            //graph.vertexSet().forEach(e -> e.setWeight(-e.getWeight()));
+            System.out.print("Graph with " + graph.vertexSet().size() + " nodes ");
+            System.out.println("and " + graph.edgeSet().size() + " edges");
             List<Elem> elems = solver.solve(graph);
             System.out.println(elems.stream().mapToDouble(Elem::getWeight).sum());
             graphIO.write(elems);

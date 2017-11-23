@@ -6,11 +6,21 @@ import ru.ifmo.ctddev.gmwcs.graph.Node
  * Created by Nikolay Poperechnyi on 27/10/2017.
  */
 typealias NodeArray = Array<Node>
-typealias Dist = Map<Node, Double>
 
-class MST(val nodes: Map<Node, Dist>) {
+typealias Distances = Map<Node, Double>
+
+/**
+ * Naive MST implementation for NPVk preprocessing.
+ * k is expected to be small(5-6) and graph should be a clique.
+ * Edge weights are assumed to be negative.
+ * @param nodes input graph
+ */
+class MST(val nodes: Map<Node, Distances>) {
     private var res: Double? = null
 
+    /**
+     * @return sum of MST weights (is negative).
+     */
     fun solve(): Double {
         if (res != null) {
             return res!!

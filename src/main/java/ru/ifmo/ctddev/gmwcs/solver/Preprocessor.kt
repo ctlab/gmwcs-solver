@@ -47,9 +47,10 @@ val nvk = ReductionSequence(
         { graph, toRemove -> negativeVertices(5, graph, toRemove) }
         , ::logAndRemoveNodes)
 
-val allSteps: Reductions = listOf(mergeNeg, mergePos, /*nvk, */negE, cns)
+//val allSteps: Reductions = listOf(mergeNeg, mergePos, negE, nvk, cns)
 
-// val allSteps: Reductions = listOf(mergeNeg)
+val allSteps: Reductions = listOf(mergeNeg, mergePos, cns)
+
 //val allSteps: Reductions = emptyList()
 
 fun mergeNegative(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
@@ -234,7 +235,10 @@ fun negativeVertices(k: Int, graph: Graph, toRemove: MutableNodeSet): NodeSet {
 }
 
 fun nvkTest(graph: Graph, v: Node): Boolean {
-    val weight = v.weight + graph.edgesOf(v).map { maxOf(0.0, it.weight) }.sum()
+    val edgesWs = graph.edgesOf(v).asSequence().map { it.weight }
+    val maxW = edgesWs.max()!!
+    val weight = v.weight + edgesWs.map { maxOf(0.0, it) }.sum() + //vertex weight + good edges sum
+            minOf(maxW, 0.0) // if all edges are negative, take the best possible
     if (weight >= 0) return false
     val delta = graph.neighborListOf(v).toSet()
     val subgraph = graph.subgraph(graph.vertexSet().minus(v))

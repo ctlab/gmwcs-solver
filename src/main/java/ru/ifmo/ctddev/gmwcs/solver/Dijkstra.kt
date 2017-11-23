@@ -48,9 +48,7 @@ class Dijkstra(private val graph: Graph, private val from: Node) {
     fun negativeDistances(neighbors: NodeSet): Map<Node, Double> =
             distances(neighbors).mapValues { -it.value }
 
-
-
-    fun distances(neighbors: Set<Node>): Map<Node, Double> {
+    private fun distances(neighbors: Set<Node>): Map<Node, Double> {
         solve(neighbors)
         return neighbors.map({ Pair(it, d[it.num] + p(from)) }).toMap()
     }
