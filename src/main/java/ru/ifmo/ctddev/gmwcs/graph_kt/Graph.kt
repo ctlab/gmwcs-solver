@@ -58,6 +58,10 @@ class Graph {
         return nodeLinks[v].orEmpty().map { it.v }
     }
 
+    fun degreeOf(n: Node): Int {
+        return nodeLinks[n]!!.size
+    }
+
     fun getOpposite(u: Node, e: Edge): Node {
         assert(edgeLinks.containsKey(e))
         val link = edgeLinks[e]
@@ -152,6 +156,7 @@ class Graph {
     fun nodeSet(): NodeSet {
         return nodeLinks.keys
     }
+
 
 
 }
