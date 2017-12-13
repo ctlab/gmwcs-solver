@@ -30,14 +30,39 @@ fun eliminate(g: Graph, v: Node) {
 
 fun greedyElimination(g: Graph,
                       argmin: (Graph) -> Node? = ::greedyDegree,
-                      acu: MutableNodeList ): NodeList {
+                      ordering: MutableNodeList): NodeList {
     val min = argmin(g)
     return when (min) {
-        null -> acu
+        null -> ordering
         else -> {
-            acu.add(min)
+            ordering.add(min)
             eliminate(g, min)
-            greedyElimination(g, argmin, acu)
+            greedyElimination(g, argmin, ordering)
         }
     }
 }
+
+data class TreeDecomposition(val bag: Set<Set<Node>>, val t: Graph)
+
+fun bag(g: Graph, node: Node): Set<Node> {
+    return g.neighborsOf(node).plus(node).toSet()
+}
+
+
+fun treeDecomposition(g: Graph, ordering: NodeList): TreeDecomposition {
+    val v = ordering[0]
+    return if (ordering.size == 1) {
+        TreeDecomposition(setOf(setOf(v)), g)
+    } else {
+        val bag = bag(g, v)
+        val u = g.neighborsOf(v).minBy { ordering.indexOf(it) }!!
+        val e = g.getEdge(v, u)!!
+        eliminate(g, v)
+        val decomp = treeDecomposition(g, ordering.drop(1))
+        decomp.t.addNode(v)
+        decomp.t.addEdge(e, v, u)
+        decomp
+    }
+}
+
+
