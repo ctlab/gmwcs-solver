@@ -7,6 +7,10 @@ import ru.ifmo.ctddev.gmwcs.graph_kt.Edge
 import ru.ifmo.ctddev.gmwcs.graph_kt.Graph
 import ru.ifmo.ctddev.gmwcs.graph_kt.Node
 import java.util.*
+import ru.ifmo.ctddev.gmwcs.solver.TreeDecomposition
+import ru.ifmo.ctddev.gmwcs.solver.greedyDegree
+import ru.ifmo.ctddev.gmwcs.solver.greedyElimination
+import ru.ifmo.ctddev.gmwcs.solver.treeDecomposition
 import kotlin.streams.toList
 
 fun abs(x: Int) = Math.abs(x)
@@ -17,8 +21,8 @@ fun abs(x: Int) = Math.abs(x)
 
 class GraphSpec : StringSpec() {
     init {
-        val N = 5000
-        val E = 50000L
+        val N = 50
+        val E = 600L
         val rand = Random()
         val g = Graph()
         val nodes = (1..N).map { Node(it, it + 0.0) }
@@ -56,7 +60,7 @@ class GraphSpec : StringSpec() {
         val dfsG = Graph()
         val dfsNodes = (1..N).map { Node(it, it + 0.0) }
         val dfsEdges = (1..N).map { Edge(it, it + 0.0) }
-        val compSize = 150
+        val compSize = 10
         dfsNodes.forEach { dfsG.addNode(it) }
 
         (0 until N / compSize).map { it * compSize }
@@ -70,7 +74,7 @@ class GraphSpec : StringSpec() {
                 }
         "DFS should return reachable nodes" {
             for (comp in 0..N / compSize)
-                dfsG.dfs(dfsNodes[comp]).size shouldBe 150
+                dfsG.dfs(dfsNodes[comp]).size shouldBe compSize
         }
         "neighborsOf(u) contains v -> neighborsOf(v) contains u" {
             for (n in nodes) {
@@ -95,8 +99,16 @@ class GraphSpec : StringSpec() {
         }
         "connected components" {
             val isolated = Graph()
-            nodes.take(100).forEach { isolated.addNode(it) }
-            isolated.connectedComponents().size shouldBe(100)
+            val n = Math.min(N, 100)
+            nodes.take(n).forEach { isolated.addNode(it) }
+            isolated.connectedComponents().size shouldBe n
         } //TODO: better test for connected components
+        "tree decomposition" {
+            g.removeLoops()
+            val g2 = g.subgraph(g.nodeSet())
+            val g3 = g.subgraph(g.nodeSet())
+            val dec = treeDecomposition(g2, greedyElimination(g3))
+            dec.t.edgeSet().size shouldBe (dec.t.nodeSet().size - 1)
+        }
     }
 }

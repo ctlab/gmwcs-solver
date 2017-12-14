@@ -91,6 +91,7 @@ class Graph {
             removeEdge(e)
         }
         nodeLinks.remove(v)
+        nodeEdges.remove(v)
     }
 
     fun removeEdge(e: Edge) {
@@ -98,6 +99,8 @@ class Graph {
         val (_, u, v) = edgeLinks[e]!!
         nodeLinks[u]!!.removeAll { it.e == e }
         nodeLinks[v]!!.removeAll { it.e == e }
+        nodeEdges[u]!!.remove(e)
+        nodeEdges[v]!!.remove(e)
         edgeLinks.remove(e)
     }
 
@@ -144,7 +147,7 @@ class Graph {
     fun connectedComponents(): Set<NodeSet> {
         val res = mutableSetOf<NodeSet>()
         nodeSet()
-                .filterNot { node -> res.any {it.contains(node) } }
+                .filterNot { node -> res.any { it.contains(node) } }
                 .forEach { res.add(dfs(it)) }
         return res
     }
@@ -157,6 +160,10 @@ class Graph {
         return nodeLinks.keys
     }
 
-
-
+    fun removeLoops() {
+        val toRemove = edgeLinks
+                .filter { it.value.u == it.value.v }
+                .map { it.key }
+        toRemove.forEach {removeEdge(it)}
+    }
 }
