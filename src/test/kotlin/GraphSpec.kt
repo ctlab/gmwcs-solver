@@ -11,6 +11,7 @@ import ru.ifmo.ctddev.gmwcs.solver.TreeDecomposition
 import ru.ifmo.ctddev.gmwcs.solver.greedyDegree
 import ru.ifmo.ctddev.gmwcs.solver.greedyElimination
 import ru.ifmo.ctddev.gmwcs.solver.treeDecomposition
+import kotlin.streams.asSequence
 import kotlin.streams.toList
 
 fun abs(x: Int) = Math.abs(x)
@@ -27,7 +28,8 @@ class GraphSpec : StringSpec() {
         val g = Graph()
         val nodes = (1..N).map { Node(it, it + 0.0) }
         val edges = rand.ints(E).map { abs(it) }
-                .distinct().mapToObj { Edge(it, it + 0.0) }.toList()
+                .distinct().asSequence().zip(1.rangeTo(E.toInt()).asSequence())
+                .map { Edge(it.second, it.first + 0.0) }.toList()
         nodes.forEach { g.addNode(it) }
 
         "Graph should properly insert nodes" {

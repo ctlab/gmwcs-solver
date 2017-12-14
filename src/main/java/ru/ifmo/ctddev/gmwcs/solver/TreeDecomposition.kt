@@ -33,7 +33,7 @@ fun eliminate(g: Graph, v: Node) {
 fun greedyElimination(g: Graph,
                       argmin: (Graph) -> Node? = ::greedyDegree,
                       ordering: MutableNodeList = mutableListOf()): NodeList {
-    if (edgeNumber == 0) edgeNumber = g.edgeSet().size
+    if (edgeNumber == 0) edgeNumber = g.edgeSet().maxBy {it.num}!!.num + 1
     val min = argmin(g)
     return when (min) {
         null -> ordering
