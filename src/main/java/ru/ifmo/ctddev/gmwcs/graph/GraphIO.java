@@ -6,6 +6,7 @@ import java.util.List;
 
 public interface GraphIO {
     Graph read() throws IOException, ParseException;
-
     void write(List<Unit> units) throws IOException;
+
+    Node nodeByName(String name);
 }

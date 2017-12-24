@@ -23,7 +23,7 @@ Running
 
 To run program you should set jvm parameter java.library.path to directory of CPLEX binaries like that:
 
-    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_sles10_4.1/ -jar gmwcs.jar
+    java -Xss4M -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_sles10_4.1/ -jar gmwcs.jar
 
 See more help by using flag -h.
 
@@ -61,7 +61,7 @@ Red units in graph below - solution.
 Running sample
 ==============
 
-    java -Djava.library.path=PATH_TO_CPLEX -jar target/gmwcs.jar -n nodes -e edges
+    java -Xss4M -Djava.library.path=PATH_TO_CPLEX -jar target/gmwcs.jar -n nodes -e edges
     
 The output should like this:
 ```

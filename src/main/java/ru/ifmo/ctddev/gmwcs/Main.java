@@ -2,12 +2,10 @@ package ru.ifmo.ctddev.gmwcs;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import ru.ifmo.ctddev.gmwcs.graph.Graph;
-import ru.ifmo.ctddev.gmwcs.graph.GraphIO;
-import ru.ifmo.ctddev.gmwcs.graph.SimpleIO;
-import ru.ifmo.ctddev.gmwcs.graph.Unit;
+import ru.ifmo.ctddev.gmwcs.graph.*;
 import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
+import ru.ifmo.ctddev.gmwcs.solver.Solver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
 
 import java.io.File;
@@ -25,6 +23,7 @@ public class Main {
         OptionSet optionSet = optionParser.parse(args);
         optionParser.acceptsAll(asList("n", "nodes"), "Node list file").withRequiredArg().required();
         optionParser.acceptsAll(asList("e", "edges"), "Edge list file").withRequiredArg().required();
+        optionParser.accepts("root", "Root node").withRequiredArg();
         optionParser.acceptsAll(asList("m", "threads"), "Number of threads").withRequiredArg()
                 .ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
@@ -76,14 +75,29 @@ public class Main {
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         RLTSolver rltSolver = new RLTSolver();
         rltSolver.setThreadsNum(threadsNum);
-        BicomponentSolver solver = new BicomponentSolver(rltSolver);
-        solver.setUnrootedTL(tl);
-        solver.setRootedTL(biggestTL.subLimit(ush == 1.0 ? 0 : rsh / (1.0 - ush)));
-        solver.setTLForBiggest(biggestTL);
+        Solver solver = null;
+        if (!optionSet.has("root")) {
+            BicomponentSolver comp_solver = new BicomponentSolver(rltSolver);
+            comp_solver.setUnrootedTL(tl);
+            comp_solver.setRootedTL(biggestTL.subLimit(ush == 1.0 ? 0 : rsh / (1.0 - ush)));
+            comp_solver.setTLForBiggest(biggestTL);
+            solver = comp_solver;
+        } else {
+            solver = rltSolver;
+            solver.setTimeLimit(tl);
+        }
         GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {
             Graph graph = graphIO.read();
+            if (optionSet.has("root")) {
+                Node root = graphIO.nodeByName((String) optionSet.valueOf("root"));
+                if (root == null) {
+                    System.err.println("Chosen root node is not presented in the graph");
+                    System.exit(1);
+                }
+                rltSolver.setRoot(root);
+            }
             List<Unit> units = solver.solve(graph);
             graphIO.write(units);
         } catch (ParseException e) {
