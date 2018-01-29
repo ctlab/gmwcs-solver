@@ -12,7 +12,7 @@ install:
 
 script:
 - mvn install -DskipTests=true
-- java -Djava.library.path=lib/lib -cp lib/lib/cplex.jar:target/gmwcs-solver.jar ru.ifmo.ctddev.gmwcs.Main -n nodes -e edges
+- java -Djava.library.path=lib/lib -cp lib/lib/cplex.jar:target/gmwcs.jar ru.ifmo.ctddev.gmwcs.Main -n nodes -e edges
 
 deploy:
   provider: releases
