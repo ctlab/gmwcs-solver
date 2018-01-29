@@ -12,13 +12,13 @@ install:
 
 script:
 - mvn install -DskipTests=true
-- java -Djava.library.path=lib/lib -cp lib/lib/cplex.jar:target/gmwcs.jar ru.ifmo.ctddev.gmwcs.Main -n nodes -e edges
+- java -Djava.library.path=lib/lib -cp lib/lib/cplex.jar:target/gmwcs-solver.jar ru.ifmo.ctddev.gmwcs.Main -n nodes -e edges
 - mvn -Djava.library.path=lib/lib test
 
 deploy:
   provider: releases
   api_key: $CI_USER_TOKEN
-  file: target/gmwcs.jar
+  file: target/gmwcs-solver.jar
   skip_cleanup: true
   on:
     tags: true
