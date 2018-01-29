@@ -12,7 +12,7 @@ import java.io.PrintWriter;
 import java.util.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class FlowTests {
+public class FlowTest {
     public static final int SEED = 20151026;
     public static final int TESTS_PER_SIZE = 1000;
     public static final int MAX_SIZE = 20;
@@ -20,7 +20,7 @@ public class FlowTests {
     public static final int DEBUG_SINK = 0;
     private Random random;
 
-    public FlowTests() throws IOException {
+    public FlowTest() throws IOException {
         random = new Random(SEED);
     }
 

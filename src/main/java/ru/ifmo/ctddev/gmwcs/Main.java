@@ -20,6 +20,7 @@ public class Main {
         OptionParser optionParser = new OptionParser();
         optionParser.allowsUnrecognizedOptions();
         optionParser.acceptsAll(asList("h", "help"), "Print a short help message");
+        optionParser.accepts("version");
         OptionSet optionSet = optionParser.parse(args);
         optionParser.acceptsAll(asList("n", "nodes"), "Node list file").withRequiredArg().required();
         optionParser.acceptsAll(asList("e", "edges"), "Edge list file").withRequiredArg().required();
@@ -29,11 +30,15 @@ public class Main {
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
                 .withRequiredArg().ofType(Long.class).defaultsTo(0L);
         optionParser.acceptsAll(asList("u", "unrooted"), "Maximum share of time allocated for solving unrooted parts")
-                .withRequiredArg().ofType(Double.class).defaultsTo(1.0 / 3.0);
+                .withRequiredArg().ofType(Double.class).defaultsTo(0.3);
         optionParser.acceptsAll(asList("r", "rooted"), "Maximum share of time allocated for solving rooted parts")
-                .withRequiredArg().ofType(Double.class).defaultsTo(1.0 / 3.0);
+                .withRequiredArg().ofType(Double.class).defaultsTo(0.3);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
+            System.exit(0);
+        }
+        if (optionSet.has("version")) {
+            System.out.println("gmwcs-solver version " + Main.class.getPackage().getImplementationVersion());
             System.exit(0);
         }
         try {
