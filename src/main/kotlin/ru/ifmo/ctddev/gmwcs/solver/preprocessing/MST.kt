@@ -1,4 +1,4 @@
-package ru.ifmo.ctddev.gmwcs.solver
+package ru.ifmo.ctddev.gmwcs.solver.preprocessing
 
 import ru.ifmo.ctddev.gmwcs.graph.Node
 

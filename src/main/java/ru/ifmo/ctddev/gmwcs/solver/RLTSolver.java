@@ -10,6 +10,7 @@ import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class RLTSolver implements RootedSolver {
     public static final double EPS = 0.01;
@@ -63,6 +64,7 @@ public class RLTSolver implements RootedSolver {
     public List<Elem> solve(Graph graph) throws SolverException {
         try {
             cplex = new IloCplex();
+
             this.graph = graph;
             initVariables();
             addConstraints();
@@ -76,6 +78,7 @@ public class RLTSolver implements RootedSolver {
             }
             breakTreeSymmetries();
             tuning(cplex);
+//            tryMst();
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
             if (solFound) {
@@ -86,6 +89,44 @@ public class RLTSolver implements RootedSolver {
             throw new SolverException(e.getMessage());
         } finally {
             cplex.end();
+        }
+    }
+
+    private void tryMst() throws IloException {
+        Map<Edge, Double> ews = buildVarGraph();
+        final Node root = this.root != null ? this.root
+                : graph.vertexSet().iterator().next();
+        MstSolver mst = new MstSolver(graph, ews, root);
+        mst.solve();
+        System.out.println("MST found solution with cost " + mst.getCost());
+        final Set<Edge> edges = new HashSet<>(mst.getEdges());
+        Graph g = graph.subgraph(graph.vertexSet(), edges);
+        D solution = TreeSolverKt.solve(g, root, null);
+        List<IloNumVar> vars = new ArrayList<>();
+        List<Double> weights = new ArrayList<>();
+        if (this.root != null) {
+            Node cur;
+            final Set<Node> nodes = solution.getWithRoot();
+            final Deque<Node> deque = new ArrayDeque<>();
+            deque.add(this.root);
+            while (!deque.isEmpty()) {
+                cur = deque.pollFirst();
+                nodes.remove(cur);
+                for (Node node : g.neighborListOf(cur)
+                        .stream().filter(nodes::contains)
+                        .collect(Collectors.toList())) {
+                    Edge e = g.getEdge(node, cur);
+                    vars.add(w.get(e));
+                    weights.add(1.0);
+                    deque.add(node);
+                }
+            }
+            final IloNumVar[] v = vars.toArray(new IloNumVar[0]);
+            final double[] w = new double[weights.size()];
+            for (int i = 0; i < weights.size(); ++i) {
+                w[i] = weights.get(i);
+            }
+            cplex.addMIPStart(v, w, IloCplex.MIPStartEffort.SolveMIP);
         }
     }
 
@@ -140,6 +181,19 @@ public class RLTSolver implements RootedSolver {
 
     public boolean isSolvedToOptimality() {
         return isSolvedToOptimality;
+    }
+
+    Map<Edge, Double> buildVarGraph() throws IloException {
+        Map<Edge, Double> result = new HashMap<>();
+        for (Edge e : graph.edgeSet()) {
+            Node u = graph.getEdgeSource(e);
+            Node v = graph.getEdgeTarget(e);
+            Double uw = cplex.getValue(y.get(u));
+            Double vw = cplex.getValue(y.get(v));
+            Double ew = cplex.getValue(w.get(e));
+            result.put(e, 3 - uw - vw - ew);
+        }
+        return result;
     }
 
     private List<Elem> getResult() throws IloException {

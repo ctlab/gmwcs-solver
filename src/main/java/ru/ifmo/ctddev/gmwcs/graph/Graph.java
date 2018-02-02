@@ -36,7 +36,6 @@ public class Graph {
         addToConnected(u, v, link);
         degree.put(v, degree.get(v) + 1);
         degree.put(u, degree.get(u) + 1);
-
     }
 
     public Set<Edge> edgesOf(Node v) {

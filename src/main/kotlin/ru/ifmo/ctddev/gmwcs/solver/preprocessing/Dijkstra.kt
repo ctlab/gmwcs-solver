@@ -1,4 +1,4 @@
-package ru.ifmo.ctddev.gmwcs.solver
+package ru.ifmo.ctddev.gmwcs.solver.preprocessing
 
 
 import ru.ifmo.ctddev.gmwcs.graph.Edge
@@ -10,11 +10,15 @@ import java.util.*
 /**
  * Created by Nikolay Poperechnyi on 04/10/2017.
  */
-class Dijkstra(private val graph: Graph, private val from: Node) {
+class Dijkstra(private val graph: Graph, private val from: Node,
+               private val save: Boolean = false) {
 
     private val s = from.num
 
+
     private val n = graph.vertexSet().maxBy { it.num }!!.num + 1
+
+    private val paths = Array(n, {emptyList<Int>()})
 
     private val visited = BooleanArray(n, { false })
 
@@ -22,7 +26,6 @@ class Dijkstra(private val graph: Graph, private val from: Node) {
 
     private fun solve(neighbors: Set<Node>) {
         if (d[s] != Double.MAX_VALUE) return
-
         val queue = PriorityQueue<Node>(
                 { n1, n2 -> (d[n1.num] - d[n2.num]).compareTo(0) }
         )
@@ -36,13 +39,22 @@ class Dijkstra(private val graph: Graph, private val from: Node) {
                 break
             for (adj in graph.neighborListOf(cur).filter { !visited[it.num] }) {
                 // 0 for positive, -weight for negative
-                val w = d[cur.num] + p(graph.getEdge(cur, adj)) + p(cur)
+                val e = graph.getEdge(cur, adj)
+                val ew = if (cur != from) maxOf(p(e, cur), p(e), p(cur)) else p(e)
+                val w = d[cur.num] + ew
                 if (d[adj.num] > w) {
                     d[adj.num] = w
                     queue.add(adj)
+                    if (save) {
+                        paths[adj.num] = paths[cur.num].plus(e.num)
+                    }
                 }
             }
         }
+    }
+
+    fun paths(): Array<List<Int>> {
+        return paths
     }
 
     fun negativeDistances(neighbors: NodeSet): Map<Node, Double> =
@@ -56,8 +68,9 @@ class Dijkstra(private val graph: Graph, private val from: Node) {
     fun negativeEdges(neighbors: Set<Node>): List<Edge> {
         solve(neighbors)
         return graph.edgesOf(from).filter {
-            val end = graph.opposite(from, it).num
-            it.weight <= 0 && d[end] < -it.weight
+            val end = graph.opposite(from, it)
+            it.weight < 0 && p(it) > d[end.num]
+            // it.weight <= 0 && d[end] < -it.weight
         }
     }
 
@@ -68,7 +81,7 @@ class Dijkstra(private val graph: Graph, private val from: Node) {
         return d[dest.num] != candPathW
     }
 
-    private fun p(e: Elem): Double {
-        return -minOf(e.weight, 0.0)
+    private fun p(vararg e: Elem): Double {
+        return -minOf(e.sumByDouble { it.weight }, 0.0)
     }
 }

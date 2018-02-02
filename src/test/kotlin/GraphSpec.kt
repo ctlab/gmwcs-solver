@@ -1,18 +1,13 @@
-import io.kotlintest.Spec
 import io.kotlintest.forAll
 import io.kotlintest.matchers.shouldBe
-import io.kotlintest.properties.forAll
 import io.kotlintest.specs.StringSpec
 import ru.ifmo.ctddev.gmwcs.graph_kt.Edge
 import ru.ifmo.ctddev.gmwcs.graph_kt.Graph
 import ru.ifmo.ctddev.gmwcs.graph_kt.Node
 import java.util.*
-import ru.ifmo.ctddev.gmwcs.solver.TreeDecomposition
-import ru.ifmo.ctddev.gmwcs.solver.greedyDegree
 import ru.ifmo.ctddev.gmwcs.solver.greedyElimination
 import ru.ifmo.ctddev.gmwcs.solver.treeDecomposition
 import kotlin.streams.asSequence
-import kotlin.streams.toList
 
 fun abs(x: Int) = Math.abs(x)
 

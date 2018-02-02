@@ -65,7 +65,7 @@ public class GMWCSTests {
                 return;
             }
         } else {
-            for (int i = 1129; i < allTests; i++) {
+            for (int i = 0; i < allTests; i++) {
                 TestCase test = tests.get(i);
                 System.out.print("\rTest(connected) no. " + (i + 1) + "/" + tests.size());
                 System.out.print(": n = " + test.n() + ", m = " + test.m() + "       ");

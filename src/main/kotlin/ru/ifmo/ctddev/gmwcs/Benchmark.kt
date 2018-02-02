@@ -3,7 +3,8 @@ package ru.ifmo.ctddev.gmwcs
 import ru.ifmo.ctddev.gmwcs.graph.Elem
 import ru.ifmo.ctddev.gmwcs.graph.Graph
 import ru.ifmo.ctddev.gmwcs.graph.SimpleIO
-import ru.ifmo.ctddev.gmwcs.solver.*
+import ru.ifmo.ctddev.gmwcs.solver.preprocessing.*
+import ru.ifmo.ctddev.gmwcs.solver.preprocessing.Preprocessor
 import java.io.File
 import java.io.FileReader
 

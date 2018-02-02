@@ -1,4 +1,4 @@
-package ru.ifmo.ctddev.gmwcs.solver
+package ru.ifmo.ctddev.gmwcs.solver.preprocessing
 
 import ru.ifmo.ctddev.gmwcs.graph.Edge
 import ru.ifmo.ctddev.gmwcs.graph.Elem
@@ -47,7 +47,8 @@ val nvk = ReductionSequence(
         { graph, toRemove -> negativeVertices(5, graph, toRemove) }
         , ::logAndRemoveNodes)
 
-val allSteps: Reductions = listOf(mergeNeg, mergePos, /*negE,*/ negV, nvk, cns)
+val allSteps: Reductions = listOf(mergeNeg, mergePos, negE, negV, nvk, cns)
+//val allSteps: Reductions = listOf(mergeNeg, mergePos, negE)
 
 //val allSteps: Reductions = listOf(mergeNeg, mergePos, cns)
 
@@ -267,6 +268,46 @@ private fun nvkPredicate(graph: Graph, weight: Double, delta: NodeSet): Boolean 
             }
     return powerset.all { it.size < 2 || MST(it).solve() > weight }
 }
+
+private fun dfsC(v: Node, g: Graph, visited: MutableMap<Node, Int>
+                 , p: List<Pair<Edge, Node>> = emptyList()): Boolean {
+    if (visited.getOrDefault(v, 0) == 2) {
+        return false
+    }
+    visited.put(v, 1)
+    for ((e, u) in g.edgesOf(v)
+            .filter { it.weight >= 0 }
+            .map { Pair(it, g.opposite(v, it)) }) {
+        val ev = Pair(e, v)
+        if (!p.isEmpty() && p.last().second != u
+                && visited.getOrDefault(u, 0) == 1) {
+            System.err.println(p.plus(ev).dropWhile { it.second != u }
+                    .joinToString(separator = "-")
+                    { "${it.second}-${it.first}" })
+            return true
+        } else {
+            if (!visited.contains(u) && dfsC(u, g, visited, p.plus(ev))) {
+                return true
+            }
+        }
+    }
+    visited.put(v, 2)
+    return false
+}
+
+fun findPosCycles(graph: Graph): Boolean {
+    val g = graph.subgraph(graph.vertexSet())
+    val vis = mutableMapOf<Node, Int>()
+    var res = 0
+    for (v in g.vertexSet().filter { it.weight >= 0 }) {
+        res += if (dfsC(v, graph, vis)) 1 else 0
+        vis.replaceAll { _, _ -> 2 }
+    }
+//    val res = g.vertexSet().filter { it.weight >= 0 }.sumBy { if (dfsC(it, graph, vis)) 1 else 0 }
+    System.err.println("\nfound $res cycles")
+    return res > 0
+}
+
 
 private fun logEdges(graph: Graph, edges: EdgeSet) {
     println("${edges.size} edges to remove")

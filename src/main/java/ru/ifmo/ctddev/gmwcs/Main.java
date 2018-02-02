@@ -2,13 +2,8 @@ package ru.ifmo.ctddev.gmwcs;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import ru.ifmo.ctddev.gmwcs.graph.Graph;
-import ru.ifmo.ctddev.gmwcs.graph.GraphIO;
-import ru.ifmo.ctddev.gmwcs.graph.SimpleIO;
-import ru.ifmo.ctddev.gmwcs.graph.Elem;
-import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
-import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
-import ru.ifmo.ctddev.gmwcs.solver.SolverException;
+import ru.ifmo.ctddev.gmwcs.graph.*;
+import ru.ifmo.ctddev.gmwcs.solver.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -87,7 +82,28 @@ public class Main {
             System.out.print("Graph with " + graph.vertexSet().size() + " nodes ");
             System.out.println("and " + graph.edgeSet().size() + " edges");
             List<Elem> elems = solver.solve(graph);
+            Graph res = new Graph();
+            for (Elem elem : elems) {
+                if (elem instanceof Edge) {
+                    Edge e = (Edge) elem;
+                    Node u = graph.getEdgeSource(e);
+                    Node v = graph.getEdgeTarget(e);
+                    if (!res.containsVertex(u)) {
+                        res.addVertex(u);
+                    }
+                    if (!res.containsVertex(v)) {
+                        res.addVertex(v);
+                    }
+                    if (!res.neighborListOf(u).contains(v)) {
+                        res.addEdge(u, v, e);
+                    }
+                }
+            }
             System.out.println(elems.stream().mapToDouble(Elem::getWeight).sum());
+            // PreprocessorKt.preprocess(res);
+            // PreprocessorKt.findPosCycles(res);
+            // assert(res.edgeSet().size() == res.vertexSet().size() - 1);
+
             graphIO.write(elems);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
