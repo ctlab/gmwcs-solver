@@ -35,11 +35,11 @@ public class Main {
                 .withRequiredArg().ofType(Double.class).defaultsTo(0.3);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
-            System.exit(0);
+            return null;
         }
         if (optionSet.has("version")) {
             System.out.println("gmwcs-solver version " + Main.class.getPackage().getImplementationVersion());
-            System.exit(0);
+            return null;
         }
         try {
             optionSet = optionParser.parse(args);
@@ -47,17 +47,17 @@ public class Main {
             double rsh = (Double) optionSet.valueOf("r");
             if (ush < 0.0 || ush > 1.0 || rsh < 0.0 || rsh > 1.0) {
                 System.err.println("Share must b in range [0,1]");
-                System.exit(1);
+                return null;
             }
             if (rsh + ush > 1.0) {
                 System.err.println("Sum of shares of rooted and unrooted parts must be <= 1.0");
-                System.exit(1);
+                return null;
             }
         } catch (Exception e) {
             System.err.println(e.getMessage());
             System.err.println();
             optionParser.printHelpOn(System.err);
-            System.exit(1);
+            return null;
         }
         return optionSet;
     }
@@ -66,9 +66,12 @@ public class Main {
         OptionSet optionSet = null;
         try {
             optionSet = parseArgs(args);
+            if (optionSet == null) {
+                return;
+            }
         } catch (IOException e) {
             // We can't say anything. Error occurred while printing to stderr.
-            System.exit(2);
+            return;
         }
         long timelimit = (Long) optionSet.valueOf("timelimit");
         TimeLimit tl = new TimeLimit(timelimit <= 0 ? Double.POSITIVE_INFINITY : timelimit);
@@ -99,7 +102,7 @@ public class Main {
                 Node root = graphIO.nodeByName((String) optionSet.valueOf("root"));
                 if (root == null) {
                     System.err.println("Chosen root node is not presented in the graph");
-                    System.exit(1);
+                    return;
                 }
                 rltSolver.setRoot(root);
             }
