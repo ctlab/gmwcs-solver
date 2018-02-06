@@ -1,7 +1,6 @@
 package ru.ifmo.ctddev.gmwcs.solver
 
 import ru.ifmo.ctddev.gmwcs.graph.Edge
-import ru.ifmo.ctddev.gmwcs.graph.Elem
 import ru.ifmo.ctddev.gmwcs.graph.Graph
 import ru.ifmo.ctddev.gmwcs.graph.Node
 
@@ -22,13 +21,15 @@ fun solve(g: Graph, root: Node, parent: Node?): D {
     val withRoot = mutableSetOf(root)
     val solutions = mutableSetOf<D>()
     var withRootD = root.weight
+    val emptySol = D(emptySet(), withRoot, 0.0, root.weight)
     if (children.isEmpty()) {
-        return if (root.weight < 0) D(withRoot, emptySet(), 0.0, root.weight)
+        return if (root.weight < 0) emptySol
         else D(withRoot, withRoot, root.weight, root.weight)
     }
     for (e in g.edgesOf(root)) {
         val opp = g.opposite(root, e)
         if (parent != null && opp == parent) continue
+        assert(opp != root)
         val sub = solve(g, opp, root)
         if (sub.bestD > 0) {
             solutions.add(sub)
@@ -38,6 +39,7 @@ fun solve(g: Graph, root: Node, parent: Node?): D {
             withRootD += sub.withRootD + e.weight
         }
     }
+    solutions.add(emptySol)
     val bestSub = solutions.maxBy { it.bestD }!!
     val bestSol = if (bestSub.bestD > withRootD) bestSub.best
     else withRoot
@@ -47,7 +49,9 @@ fun solve(g: Graph, root: Node, parent: Node?): D {
 
 fun main(args: Array<String>) {
         val g = Graph()
-        val nodes = arrayOf(Node(1, 1.0), Node(2, -1.0), Node(3, 3.0))
+        val nodes = arrayOf(Node(1, -5.0),
+                Node(2, -1.0),
+                Node(3, -2.0))
         val edges = arrayOf(Edge(1, 1.0), Edge(2, -1.0))
         nodes.forEach { g.addVertex(it) }
         edges.forEach { g.addEdge(nodes[it.num - 1], nodes[it.num], it) }

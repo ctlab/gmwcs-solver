@@ -64,7 +64,6 @@ public class RLTSolver implements RootedSolver {
     public List<Elem> solve(Graph graph) throws SolverException {
         try {
             cplex = new IloCplex();
-
             this.graph = graph;
             initVariables();
             addConstraints();
@@ -78,9 +77,11 @@ public class RLTSolver implements RootedSolver {
             }
             breakTreeSymmetries();
             tuning(cplex);
-//            tryMst();
+            MstCallback cb = new MstCallback();
+            cplex.use(cb);
             boolean solFound = cplex.solve();
-            tl.spend(Math.min(tl.getRemainingTime(), (System.currentTimeMillis() - timeBefore) / 1000.0));
+            tl.spend(Math.min(tl.getRemainingTime(),
+                    (System.currentTimeMillis() - timeBefore) / 1000.0));
             if (solFound) {
                 return getResult();
             }
@@ -92,23 +93,49 @@ public class RLTSolver implements RootedSolver {
         }
     }
 
-    private void tryMst() throws IloException {
-        Map<Edge, Double> ews = buildVarGraph();
+    private class MstCallback extends IloCplex.HeuristicCallback {
+        private int counter = 0;
+        protected void main() throws IloException {
+            if (counter % 1000 == 0 && counter / 1000 < 10)
+                tryMst(this);
+            counter++;
+        }
+
+        private Map<Edge, Double> buildVarGraph() throws IloException {
+            Map<Edge, Double> result = new HashMap<>();
+            for (Edge e : graph.edgeSet()) {
+                Node u = graph.getEdgeSource(e);
+                Node v = graph.getEdgeTarget(e);
+                Double uw = getValue(y.get(u));
+                Double vw = getValue(y.get(v));
+                Double ew = getValue(w.get(e));
+                result.put(e, 3 - uw - vw - ew);
+            }
+            return result;
+        }
+    }
+
+    private void tryMst(MstCallback cb) throws IloException {
+
+//        cplex.getI
+        Map<Edge, Double> ews = cb.buildVarGraph();
         final Node root = this.root != null ? this.root
                 : graph.vertexSet().iterator().next();
-        MstSolver mst = new MstSolver(graph, ews, root);
+        MSTSolver mst = new MSTSolver(graph, ews, root);
         mst.solve();
-        System.out.println("MST found solution with cost " + mst.getCost());
         final Set<Edge> edges = new HashSet<>(mst.getEdges());
         Graph g = graph.subgraph(graph.vertexSet(), edges);
         D solution = TreeSolverKt.solve(g, root, null);
-        List<IloNumVar> vars = new ArrayList<>();
-        List<Double> weights = new ArrayList<>();
-        if (this.root != null) {
+        final Double best = solution.getBestD();
+        System.err.println("mst found solution with score " + best);
+        if (cplex.getParam(IloCplex.DoubleParam.CutLo) < best) {
+            List<IloNumVar> vars = new ArrayList<>();
+            List<Double> weights = new ArrayList<>();
+            cplex.setParam(IloCplex.DoubleParam.CutLo, best);
             Node cur;
             final Set<Node> nodes = solution.getWithRoot();
             final Deque<Node> deque = new ArrayDeque<>();
-            deque.add(this.root);
+            deque.add(root);
             while (!deque.isEmpty()) {
                 cur = deque.pollFirst();
                 nodes.remove(cur);
@@ -125,8 +152,8 @@ public class RLTSolver implements RootedSolver {
             final double[] w = new double[weights.size()];
             for (int i = 0; i < weights.size(); ++i) {
                 w[i] = weights.get(i);
+                cplex.addMIPStart(v, w, IloCplex.MIPStartEffort.SolveMIP);
             }
-            cplex.addMIPStart(v, w, IloCplex.MIPStartEffort.SolveMIP);
         }
     }
 
@@ -181,19 +208,6 @@ public class RLTSolver implements RootedSolver {
 
     public boolean isSolvedToOptimality() {
         return isSolvedToOptimality;
-    }
-
-    Map<Edge, Double> buildVarGraph() throws IloException {
-        Map<Edge, Double> result = new HashMap<>();
-        for (Edge e : graph.edgeSet()) {
-            Node u = graph.getEdgeSource(e);
-            Node v = graph.getEdgeTarget(e);
-            Double uw = cplex.getValue(y.get(u));
-            Double vw = cplex.getValue(y.get(v));
-            Double ew = cplex.getValue(w.get(e));
-            result.put(e, 3 - uw - vw - ew);
-        }
-        return result;
     }
 
     private List<Elem> getResult() throws IloException {
