@@ -11,6 +11,8 @@ import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 public class RLTSolver implements RootedSolver {
     public static final double EPS = 0.01;
@@ -95,9 +97,11 @@ public class RLTSolver implements RootedSolver {
 
     private class MstCallback extends IloCplex.HeuristicCallback {
         private int counter = 0;
+
         protected void main() throws IloException {
-            if (counter % 1000 == 0 && counter / 1000 < 10)
+            if (counter % 1000 == 0 && counter / 1000 < 100) {
                 tryMst(this);
+            }
             counter++;
         }
 
@@ -113,11 +117,117 @@ public class RLTSolver implements RootedSolver {
             }
             return result;
         }
+
+     /*   void setWeights(List<IloNumVar> vars, List<Double> weights) throws IloException {
+            final IloNumVar[] v = vars.toArray(new IloNumVar[0]);
+            final double[] w = new double[weights.size()];
+            final double[] y = new double[RLTSolver.this.y.size()];
+            final double[] d = new double[RLTSolver.this.d.size()];
+            final double[] x = new double[RLTSolver.this.x.size()];
+            for (int i = 0; i < weights.size(); ++i) {
+                w[i] = weights.get(i);
+                y[i] = 1;
+            }
+            y[weights.size()] = 1;
+            this.setSolution(v, w);
+            double[] ww = this.getValues(v);
+            System.err.println(Arrays.toString(w));
+            System.err.println(Arrays.toString(ww));
+            y.values().toArray(new IloNumVar[0]);
+            System.err.println(
+                    Arrays.toString(this.getValues(y.values().toArray(new IloNumVar[0])))
+            );
+            System.err.println(
+                    Arrays.toString(this.getValues(d.values().toArray(new IloNumVar[0])))
+            );
+        }
+*/
+        void newSolution(D solution, Graph g, Node root) throws IloException {
+            List<IloNumVar> vars = new ArrayList<>();
+            List<Double> weights = new ArrayList<>();
+            final Double[] w = new Double[g.edgeSet().size()];
+            final Double[] y = new Double[RLTSolver.this.y.size()];
+            final Double[] d = new Double[RLTSolver.this.d.size()];
+            final Double[] x0 = new Double[RLTSolver.this.x0.size()];
+            final IloNumVar[] w_n = new IloNumVar[g.edgeSet().size()];
+            final IloNumVar[] y_n = new IloNumVar[RLTSolver.this.y.size()];
+            final IloNumVar[] d_n = new IloNumVar[RLTSolver.this.d.size()];
+            final IloNumVar[] x0_n = new IloNumVar[RLTSolver.this.x0.size()];
+//            cplex.setParam(IloCplex.DoubleParam.CutLo, best);
+            Node cur;
+            final Set<Edge> zeroEdges = new HashSet<>(g.edgeSet());
+            final Set<Node> nodes = solution.getWithRoot();
+            final Deque<Node> deque = new ArrayDeque<>();
+            deque.add(root);
+            int n = 0;
+            List<IloNumVar> arcs = new ArrayList<>();
+            List<Double> arcs_w = new ArrayList<>();
+            while (!deque.isEmpty()) {
+                cur = deque.pollFirst();
+                x0_n[n] = RLTSolver.this.x0.get(cur);
+                x0[n] = n > 0 ? 0.0 : 1.0;
+                y_n[n] = RLTSolver.this.y.get(cur);
+                y[n] = 1.0;
+                n++;
+                nodes.remove(cur);
+                for (Node node : g.neighborListOf(cur)
+                        .stream().filter(nodes::contains)
+                        .collect(Collectors.toList())) {
+                    d_n[n + deque.size()] = RLTSolver.this.d.get(node);
+                    d[n + deque.size()] = n + 0.0;
+                    Edge e = g.getEdge(node, cur);
+                    Pair<IloNumVar, IloNumVar> p = RLTSolver.this.x.get(e);
+                    arcs.add(p.first);
+                    arcs.add(p.second);
+                    arcs_w.add(1.0);
+                    arcs_w.add(0.0);
+                    zeroEdges.remove(e);
+                    vars.add(RLTSolver.this.w.get(e));
+                    weights.add(1.0);
+                    deque.add(node);
+                }
+            }
+            for (Edge e : zeroEdges) {
+                vars.add(RLTSolver.this.w.get(e));
+                weights.add(0.0);
+                Pair<IloNumVar, IloNumVar> p = RLTSolver.this.x.get(e);
+                arcs.add(p.first);
+                arcs.add(p.second);
+                arcs_w.add(0.0);
+                arcs_w.add(0.0);
+            }
+            final Double[] x = new Double[arcs.size()];
+            final IloNumVar[] x_n = new IloNumVar[arcs.size()];
+            for (int i = 0; i < arcs.size(); ++i) {
+                x_n[i] = arcs.get(i);
+                x[i] = arcs_w.get(i);
+            }
+            for (int i = 0; i < weights.size(); ++i) {
+                w[i] = weights.get(i);
+                w_n[i] = vars.get(i);
+            }
+            Arrays.setAll(y, (ignore) -> 1.0);
+            List<IloNumVar> sol_n = new ArrayList<>(Arrays.asList(w_n));
+            sol_n.addAll(Arrays.asList(y_n));
+            sol_n.addAll(Arrays.asList(d_n));
+            sol_n.addAll(Arrays.asList(x_n));
+            sol_n.addAll(Arrays.asList(x0_n));
+            List<Double> sol = new ArrayList<>(Arrays.asList(w));
+            sol.addAll(Arrays.asList(y));
+            sol.addAll(Arrays.asList(d));
+            sol.addAll(Arrays.asList(x));
+            sol.addAll(Arrays.asList(x0));
+            double[] solD = new double[sol.size()];
+            for (int i = 0; i < sol.size(); ++i ) {
+                System.err.println(i);
+                solD[i] = sol.get(i);
+            }
+            this.setSolution(sol_n.toArray(new IloNumVar[0]), solD);
+
+        }
     }
 
     private void tryMst(MstCallback cb) throws IloException {
-
-//        cplex.getI
         Map<Edge, Double> ews = cb.buildVarGraph();
         final Node root = this.root != null ? this.root
                 : graph.vertexSet().iterator().next();
@@ -129,31 +239,7 @@ public class RLTSolver implements RootedSolver {
         final Double best = solution.getBestD();
         System.err.println("mst found solution with score " + best);
         if (cplex.getParam(IloCplex.DoubleParam.CutLo) < best) {
-            List<IloNumVar> vars = new ArrayList<>();
-            List<Double> weights = new ArrayList<>();
-            cplex.setParam(IloCplex.DoubleParam.CutLo, best);
-            Node cur;
-            final Set<Node> nodes = solution.getWithRoot();
-            final Deque<Node> deque = new ArrayDeque<>();
-            deque.add(root);
-            while (!deque.isEmpty()) {
-                cur = deque.pollFirst();
-                nodes.remove(cur);
-                for (Node node : g.neighborListOf(cur)
-                        .stream().filter(nodes::contains)
-                        .collect(Collectors.toList())) {
-                    Edge e = g.getEdge(node, cur);
-                    vars.add(w.get(e));
-                    weights.add(1.0);
-                    deque.add(node);
-                }
-            }
-            final IloNumVar[] v = vars.toArray(new IloNumVar[0]);
-            final double[] w = new double[weights.size()];
-            for (int i = 0; i < weights.size(); ++i) {
-                w[i] = weights.get(i);
-                cplex.addMIPStart(v, w, IloCplex.MIPStartEffort.SolveMIP);
-            }
+            cb.newSolution(solution, g, root);
         }
     }
 

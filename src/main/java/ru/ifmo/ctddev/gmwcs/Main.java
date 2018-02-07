@@ -81,7 +81,10 @@ public class Main {
             Graph graph = graphIO.read();
             System.out.print("Graph with " + graph.vertexSet().size() + " nodes ");
             System.out.println("and " + graph.edgeSet().size() + " edges");
+            double before = System.currentTimeMillis();
             List<Elem> elems = solver.solve(graph);
+            double delta = System.currentTimeMillis();
+            System.out.println("Solution took " + (delta - before) / 1000);
             Graph res = new Graph();
             for (Elem elem : elems) {
                 if (elem instanceof Edge) {
