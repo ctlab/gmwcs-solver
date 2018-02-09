@@ -34,7 +34,7 @@ fun solve(g: Graph, root: Node, parent: Node?): D {
         if (sub.bestD > 0) {
             solutions.add(sub)
         }
-        if (sub.withRootD + e.weight > 0) {
+        if (sub.withRootD + e.weight >= 0) {
             withRoot.addAll(sub.withRoot)
             withRootD += sub.withRootD + e.weight
         }
