@@ -45,14 +45,24 @@ val cns = ReductionSequence(::cns, ::logAndRemoveNodes)
 
 val nvk = ReductionSequence(
         { graph, toRemove -> negativeVertices(5, graph, toRemove) }
-        , ::logAndRemoveNodes)
+        , ::logAndRemoveNodes
+)
 
-val allSteps: Reductions = listOf(mergeNeg, mergePos, negE, negV, nvk, cns)
+val isolated = ReductionSequence(
+        { graph, toRemove -> isolatedVertices(graph, toRemove) }
+        , ::logAndRemoveNodes
+)
+
+val allSteps: Reductions = listOf(isolated, mergeNeg, mergePos, negE, negV, nvk, cns)
 //val allSteps: Reductions = listOf(mergeNeg, mergePos, negE)
 
 //val allSteps: Reductions = listOf(mergeNeg, mergePos, cns)
 
 //val allSteps: Reductions = emptyList()
+
+fun isolatedVertices(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
+    return graph.vertexSet().filterTo(toRemove, { it.weight <= 0 && graph.degreeOf(it) == 0 })
+}
 
 fun mergeNegative(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
     for (v in graph.vertexSet().toList()) {

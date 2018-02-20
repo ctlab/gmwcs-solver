@@ -47,8 +47,8 @@ public class MSTSolver {
                 }
             }
             final Edge e = q.remove();
-            Node et = g.getEdgeTarget(e);
-            Node es = g.getEdgeSource(e);
+            final Node et = g.getEdgeTarget(e);
+            final Node es = g.getEdgeSource(e);
             if (unvisited.contains(et) || unvisited.contains(es)) {
                 cost += ws.get(e);
                 res.add(e);

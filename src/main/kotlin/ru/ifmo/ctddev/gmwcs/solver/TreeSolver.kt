@@ -21,7 +21,7 @@ fun solve(g: Graph, root: Node, parent: Node?): D {
     val withRoot = mutableSetOf(root)
     val solutions = mutableSetOf<D>()
     var withRootD = root.weight
-    val emptySol = D(emptySet(), withRoot, 0.0, root.weight)
+    val emptySol = D(emptySet(), withRoot.toSet(), 0.0, root.weight)
     if (children.isEmpty()) {
         return if (root.weight < 0) emptySol
         else D(withRoot, withRoot, root.weight, root.weight)
