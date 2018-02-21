@@ -16,11 +16,12 @@ import java.util.stream.Stream;
 
 import static java.util.Arrays.*;
 
-public class RLTSolver implements RootedSolver {
+public class RLTSolver extends IloVarHolder implements RootedSolver {
     public static final double EPS = 0.01;
     private IloCplex cplex;
     private Map<Node, IloNumVar> y;
     private Map<Edge, IloNumVar> w;
+    private Map<IloNumVar, Double> mstWeights;
     private Map<Edge, Pair<IloNumVar, IloNumVar>> x;
     private Map<Node, IloNumVar> d;
     private Map<Node, IloNumVar> x0;
@@ -64,6 +65,16 @@ public class RLTSolver implements RootedSolver {
         this.root = root;
     }
 
+    public void initMstWeights() {
+        mstWeights = new HashMap<>();
+        for (Edge e: graph.edgeSet()) {
+            mstWeights.put(w.get(e), e.getWeight() > 0 ? 1.0 : 0);
+        }
+        for (Node n: graph.vertexSet()) {
+            mstWeights.put(y.get(n), n.getWeight() > 0 ? 1.0 : 0);
+        }
+    }
+
     @Override
     public List<Elem> solve(Graph graph) throws SolverException {
         try {
@@ -73,19 +84,18 @@ public class RLTSolver implements RootedSolver {
             addConstraints();
             addObjective();
             maxSizeConstraints();
+            initMstWeights();
             long timeBefore = System.currentTimeMillis();
-            System.err.println("Root " + root);
             if (root == null) {
                 breakRootSymmetry();
             } else {
-//                tighten();
+                tighten();
             }
             breakTreeSymmetries();
             tuning(cplex);
-            MstCallback cb = new MstCallback();
-            IncCallback cb2 = new IncCallback();
-            cplex.use(cb);
-            cplex.use(cb2);
+            cplex.use(new MstCallback());
+            cplex.use(new LogCallback());
+            if (!graph.vertexSet().isEmpty()) tryMst(this);
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(),
                     (System.currentTimeMillis() - timeBefore) / 1000.0));
@@ -100,164 +110,154 @@ public class RLTSolver implements RootedSolver {
         }
     }
 
-    private class IncCallback extends IloCplex.IncumbentCallback {
-
-        @Override
-        protected void main() throws IloException {
-            System.err.println(getIncumbentObjValue());
-            if (getSolutionSource() == 118) {
-                System.err.println("Value " + this.getObjValue());
-            }
-        }
+    @Override
+    protected void setSolution(IloNumVar[] v, double[] d) throws IloException {
+        cplex.addMIPStart(v, d);
     }
 
+    @Override
+    protected double getValue(IloNumVar v) throws IloException {
+        return mstWeights.get(v);
+    }
 
     private class MstCallback extends IloCplex.HeuristicCallback {
         private int counter = 0;
+        private IloVarHolder hld;
+
+        MstCallback() {
+            super();
+            hld = new IloVarHolder() {
+                @Override
+                protected void setSolution(IloNumVar[] v, double[] d) throws IloException {
+                    MstCallback.this.setSolution(v, d);
+                }
+
+                @Override
+                protected double getValue(IloNumVar v) throws IloException {
+                    return MstCallback.this.getValue(v);
+                }
+            };
+        }
 
         protected void main() throws IloException {
             if (counter % 1000 == 0 && counter / 1000 < 100) {
-                tryMst(this);
+                tryMst(this.hld);
             }
             counter++;
         }
-
-        private Map<Edge, Double> buildVarGraph() throws IloException {
-            Map<Edge, Double> result = new HashMap<>();
-            for (Edge e : graph.edgeSet()) {
-                Node u = graph.getEdgeSource(e);
-                Node v = graph.getEdgeTarget(e);
-                Double uw = getValue(y.get(u));
-                Double vw = getValue(y.get(v));
-                Double ew = getValue(w.get(e));
-                result.put(e, 3 - uw - vw - ew);
-            }
-            return result;
-        }
-
-        void newSolution(D solution, Graph g, Node root) throws IloException {
-            List<IloNumVar> vars = new ArrayList<>();
-            List<Double> weights = new ArrayList<>();
-            final Double[] w = new Double[RLTSolver.this.w.size()];
-            final Double[] y = new Double[RLTSolver.this.y.size()];
-            final Double[] d = new Double[RLTSolver.this.d.size()];
-            final Double[] x0 = new Double[RLTSolver.this.x0.size()];
-            final IloNumVar[] w_n = new IloNumVar[RLTSolver.this.w.size()];
-            final IloNumVar[] y_n = new IloNumVar[RLTSolver.this.y.size()];
-            final IloNumVar[] d_n = new IloNumVar[RLTSolver.this.d.size()];
-            final IloNumVar[] x0_n = new IloNumVar[RLTSolver.this.x0.size()];
-            Node cur;
-            final Set<Edge> zeroEdges = new HashSet<>(RLTSolver.this.graph.edgeSet());
-            final Set<Node> nodes = new HashSet<>(solution.getWithRoot());
-            final Set<Node> zeroNodes = new HashSet<>(RLTSolver.this.graph.vertexSet());
-            zeroNodes.removeAll(nodes);
-            final Deque<Node> deque = new ArrayDeque<>();
-            deque.add(root != null ? root
-                    : nodes.stream().max(Comparator.comparingDouble(Node::getWeight))
-                    .get()
-            );
-            int n = 0;
-            List<IloNumVar> arcs = new ArrayList<>();
-            List<Double> arcs_w = new ArrayList<>();
-            d[0] = 0.0;
-            d_n[0] = RLTSolver.this.d.get(deque.getFirst());
-            fill(x0, 0.0);
-            x0[0] = 1.0;
-            int dist = 0;
-            while (!deque.isEmpty()) {
-                cur = deque.pollFirst();
-                x0_n[n] = RLTSolver.this.x0.get(cur);
-                y_n[n] = RLTSolver.this.y.get(cur);
-                y[n] = 1.0;
-                n++;
-                nodes.remove(cur);
-                int l = deque.size();
-                List<Node> neighbors = g.neighborListOf(cur)
-                        .stream().filter(nodes::contains).collect(Collectors.toList());
-                if (!neighbors.isEmpty()) {
-                    dist++;
-                }
-                for (Node node : neighbors) {
-                    d_n[n + l] = RLTSolver.this.d.get(node);
-                    d[n + l] = (double) dist;
-                    l++;
-                    Edge e = g.getEdge(node, cur);
-                    Pair<IloNumVar, IloNumVar> p = RLTSolver.this.x.get(e);
-                    arcs.add(getX(e, node));
-                    arcs.add(getX(e, cur));
-                    arcs_w.add(1.0);
-                    arcs_w.add(0.0);
-                    zeroEdges.remove(e);
-                    vars.add(RLTSolver.this.w.get(e));
-                    weights.add(1.0);
-                    deque.add(node);
-                }
-            }
-            System.err.println(g.subgraph(solution.getWithRoot()).edgeSet().size());
-            System.err.println("Incumbent " + getIncumbentObjValue());
-            for (Edge e : zeroEdges) {
-                vars.add(RLTSolver.this.w.get(e));
-                weights.add(0.0);
-                Pair<IloNumVar, IloNumVar> p = RLTSolver.this.x.get(e);
-                arcs.add(p.first);
-                arcs.add(p.second);
-                arcs_w.add(0.0);
-                arcs_w.add(0.0);
-            }
-            final Double[] x = new Double[arcs.size()];
-            final IloNumVar[] x_n = new IloNumVar[arcs.size()];
-            for (Node node : zeroNodes) {
-                x0_n[n] = RLTSolver.this.x0.get(node);
-                d_n[n] = RLTSolver.this.d.get(node);
-                d[n] = 0.0;
-                y[n] = 0.0;
-                y_n[n] = RLTSolver.this.y.get(node);
-                n++;
-            }
-            for (int i = 0; i < arcs.size(); ++i) {
-                x_n[i] = arcs.get(i);
-                x[i] = arcs_w.get(i);
-            }
-            for (int i = 0; i < weights.size(); ++i) {
-                w[i] = weights.get(i);
-                w_n[i] = vars.get(i);
-            }
-            List<IloNumVar> sol_n = new ArrayList<>(asList(w_n));
-            sol_n.addAll(asList(y_n));
-            sol_n.addAll(asList(d_n));
-            sol_n.addAll(asList(x_n));
-            sol_n.addAll(asList(x0_n));
-            List<Double> sol = new ArrayList<>(asList(w));
-            sol.addAll(asList(y));
-            sol.addAll(asList(d));
-            sol.addAll(asList(x));
-            sol.addAll(asList(x0));
-            double[] solD = new double[sol.size()];
-            for (int i = 0; i < sol.size(); ++i) {
-                solD[i] = sol.get(i);
-            }
-            this.setSolution(sol_n.toArray(new IloNumVar[0]), solD);
-            for (int i = 0; i < sol.size(); ++i) {
-                IloNumVar v = sol_n.get(i);
-                assert (v.getLB() <= sol.get(i) && sol.get(i) <= v.getUB());
-            }
-            System.err.println(Arrays.toString(y) + " " + Arrays.toString(y_n));
-            System.err.println(Arrays.toString(x) + " " + Arrays.toString(x_n));
-            System.err.println(Arrays.toString(x0) + " " + Arrays.toString(x0_n));
-            System.err.println(Arrays.toString(w) + " " + Arrays.toString(w_n));
-            System.err.println(Arrays.toString(d) + " " + Arrays.toString(d_n));
-        }
     }
 
-    private void tryMst(MstCallback cb) throws IloException {
-        Map<Edge, Double> ews = cb.buildVarGraph();
+    void newSolution(D solution, Graph g, Node root, IloVarHolder hld) throws IloException {
+        List<IloNumVar> vars = new ArrayList<>();
+        List<Double> weights = new ArrayList<>();
+        final Double[] w = new Double[this.w.size()];
+        final Double[] y = new Double[this.y.size()];
+        final Double[] d = new Double[this.d.size()];
+        final Double[] x0 = new Double[this.x0.size()];
+        final IloNumVar[] w_n = new IloNumVar[this.w.size()];
+        final IloNumVar[] y_n = new IloNumVar[this.y.size()];
+        final IloNumVar[] d_n = new IloNumVar[this.d.size()];
+        final IloNumVar[] x0_n = new IloNumVar[this.x0.size()];
+        Node cur;
+        final Set<Edge> zeroEdges = new HashSet<>(this.graph.edgeSet());
+        final Set<Node> nodes = new HashSet<>(solution.getWithRoot());
+        final Set<Node> zeroNodes = new HashSet<>(this.graph.vertexSet());
+        zeroNodes.removeAll(nodes);
+        final Deque<Node> deque = new ArrayDeque<>();
+        deque.add(root != null ? root
+                : nodes.stream().max(Comparator.comparingDouble(Node::getWeight))
+                .get()
+        );
+        int n = 0;
+        List<IloNumVar> arcs = new ArrayList<>();
+        List<Double> arcs_w = new ArrayList<>();
+        d[0] = 0.0;
+        d_n[0] = this.d.get(deque.getFirst());
+        fill(x0, 0.0);
+        x0[0] = 1.0;
+        int dist = 0;
+        while (!deque.isEmpty()) {
+            cur = deque.pollFirst();
+            x0_n[n] = this.x0.get(cur);
+            y_n[n] = this.y.get(cur);
+            y[n] = 1.0;
+            n++;
+            nodes.remove(cur);
+            int l = deque.size();
+            List<Node> neighbors = g.neighborListOf(cur)
+                    .stream().filter(nodes::contains).collect(Collectors.toList());
+            if (!neighbors.isEmpty()) {
+                dist++;
+            }
+            for (Node node : neighbors) {
+                d_n[n + l] = this.d.get(node);
+                d[n + l] = (double) dist;
+                l++;
+                Edge e = g.getEdge(node, cur);
+                arcs.add(getX(e, node));
+                arcs.add(getX(e, cur));
+                arcs_w.add(1.0);
+                arcs_w.add(0.0);
+                zeroEdges.remove(e);
+                vars.add(RLTSolver.this.w.get(e));
+                weights.add(1.0);
+                deque.add(node);
+            }
+        }
+        for (Edge e : zeroEdges) {
+            vars.add(RLTSolver.this.w.get(e));
+            weights.add(0.0);
+            Pair<IloNumVar, IloNumVar> p = this.x.get(e);
+            arcs.add(p.first);
+            arcs.add(p.second);
+            arcs_w.add(0.0);
+            arcs_w.add(0.0);
+        }
+        final Double[] x = new Double[arcs.size()];
+        final IloNumVar[] x_n = new IloNumVar[arcs.size()];
+        for (Node node : zeroNodes) {
+            x0_n[n] = RLTSolver.this.x0.get(node);
+            d_n[n] = RLTSolver.this.d.get(node);
+            d[n] = 0.0;
+            y[n] = 0.0;
+            y_n[n] = RLTSolver.this.y.get(node);
+            n++;
+        }
+        for (int i = 0; i < arcs.size(); ++i) {
+            x_n[i] = arcs.get(i);
+            x[i] = arcs_w.get(i);
+        }
+        for (int i = 0; i < weights.size(); ++i) {
+            w[i] = weights.get(i);
+            w_n[i] = vars.get(i);
+        }
+        List<IloNumVar> sol_n = new ArrayList<>(asList(w_n));
+        sol_n.addAll(asList(y_n));
+        sol_n.addAll(asList(d_n));
+        sol_n.addAll(asList(x_n));
+        sol_n.addAll(asList(x0_n));
+        List<Double> sol = new ArrayList<>(asList(w));
+        sol.addAll(asList(y));
+        sol.addAll(asList(d));
+        sol.addAll(asList(x));
+        sol.addAll(asList(x0));
+        double[] solD = new double[sol.size()];
+        for (int i = 0; i < sol.size(); ++i) {
+            solD[i] = sol.get(i);
+        }
+        hld.setSolution(sol_n.toArray(new IloNumVar[0]), solD);
+    }
+
+    private void tryMst(IloVarHolder hld) throws IloException {
+        Map<Edge, Double> ews = hld.buildVarGraph(graph, this.y, this.w);
         D solution = null;
         Graph gr = null;
         for (Set<Node> set : graph.connectedSets()) {
-            final Node root = this.root != null ? this.root
-                    : graph.vertexSet().stream().max(
-                    Comparator.comparingDouble(Node::getWeight)
-            ).get();
+            final Node root = Optional.ofNullable(this.root).orElse(
+                    set.stream().max(
+                            Comparator.comparingDouble(Node::getWeight)
+                    ).get() // Assuming that connected set is not empty
+            );
             Graph g = graph.subgraph(set);
             if (!g.containsVertex(root)) {
                 continue;
@@ -271,10 +271,10 @@ public class RLTSolver implements RootedSolver {
                 gr = g;
             }
         }
-        final Double best = solution.getBestD();
+        final double best = solution.getBestD();
         System.err.println("mst found solution with score " + best);
         if (cplex.getParam(IloCplex.DoubleParam.CutLo) < best) {
-            cb.newSolution(solution, gr, this.root);
+            newSolution(solution, gr, this.root, hld);
         }
     }
 
@@ -334,28 +334,16 @@ public class RLTSolver implements RootedSolver {
     private List<Elem> getResult() throws IloException {
         isSolvedToOptimality = false;
         List<Elem> result = new ArrayList<>();
-        System.err.println(Arrays.toString(
-                cplex.getValues(x.values().stream().flatMap(x -> Stream.of(x.first, x.second))
-                        .collect(Collectors.toList()).toArray(new IloNumVar[0]))));
-        System.err.println(Arrays.toString(
-                x.values().stream().flatMap(x -> Stream.of(x.first, x.second))
-                        .collect(Collectors.toList()).toArray(new IloNumVar[0])));
-        System.err.println(Arrays.toString(cplex.getValues(x0.values().toArray(new IloNumVar[0]))));
-        System.err.println(Arrays.toString((x0.values().toArray(new IloNumVar[0]))));
         for (Node node : graph.vertexSet()) {
-            System.err.print(node.getNum() + " " + cplex.getValue(y.get(node)) + "\t");
             if (cplex.getValue(y.get(node)) > EPS) {
                 result.add(node);
             }
         }
-        System.err.println("");
         for (Edge edge : graph.edgeSet()) {
-            System.err.print(edge.getNum() + " " + cplex.getValue(w.get(edge)) + "\t");
             if (cplex.getValue(w.get(edge)) > EPS) {
                 result.add(edge);
             }
         }
-        System.err.println("");
         if (cplex.getStatus() == IloCplex.Status.Optimal) {
             isSolvedToOptimality = true;
         }
@@ -414,9 +402,9 @@ public class RLTSolver implements RootedSolver {
             k--;
         }
         IloNumVar sum = cplex.numVar(0, n, "prSum");
-//        cplex.addEq(sum, cplex.sum(terms));
+        cplex.addEq(sum, cplex.sum(terms));
         for (int i = 0; i < n; i++) {
-            //       cplex.addGe(sum, rs[i]);
+            cplex.addGe(sum, rs[i]);
         }
     }
 
@@ -474,7 +462,7 @@ public class RLTSolver implements RootedSolver {
                 if (u.getWeight() >= 0) {
                     Edge e = graph.getEdge(v, u);
                     if (e != null && e.getWeight() >= 0) {
-                        //           cplex.addLe(y.get(v), w.get(e));
+                        cplex.addLe(y.get(v), w.get(e));
                     }
                 }
             }
@@ -496,7 +484,6 @@ public class RLTSolver implements RootedSolver {
     private void sumConstraints() throws IloException {
         // (31)
         cplex.addLe(cplex.sum(graph.vertexSet().stream().map(x -> x0.get(x)).toArray(IloNumVar[]::new)), 1);
-        System.err.println("ROOT " + root);
         if (root != null) {
             cplex.addEq(x0.get(root), 1);
         }
@@ -535,5 +522,14 @@ public class RLTSolver implements RootedSolver {
 
     public void setLB(double lb) {
         this.minimum = lb;
+    }
+
+    private class LogCallback extends IloCplex.IncumbentCallback {
+
+        @Override
+        protected void main() throws IloException {
+            System.err.println(this.getSolutionSource() == 118);
+            System.err.println("Value " + this.getIncumbentObjValue());
+        }
     }
 }
