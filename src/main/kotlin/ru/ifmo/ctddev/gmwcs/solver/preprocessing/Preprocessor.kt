@@ -4,10 +4,24 @@ import ru.ifmo.ctddev.gmwcs.graph.Edge
 import ru.ifmo.ctddev.gmwcs.graph.Elem
 import ru.ifmo.ctddev.gmwcs.graph.Graph
 import ru.ifmo.ctddev.gmwcs.graph.Node
+import ru.ifmo.ctddev.gmwcs.solver.SolverException
+import java.util.concurrent.ConcurrentSkipListSet
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.stream.Collectors
+import java.util.stream.Stream
 
 /**
  * Created by Nikolay Poperechnyi on 03/10/2017.
  */
+
+
+private var threads: Int = 1
+
+fun setThreads(n: Int) {
+    if (n <= 0) throw SolverException("Preprocessor num threads < 0")
+    threads = n
+}
 
 fun Graph.getAdjacent(e: Edge) = Pair(this.getEdgeSource(e), this.getEdgeTarget(e))
 
@@ -24,7 +38,8 @@ private fun <T> powerset(left: Collection<T>, acc: Set<Set<T>> = setOf(emptySet(
     else -> powerset(left.drop(1), acc + acc.map { it + left.first() })
 }
 
-class ReductionSequence<T : Elem>(private val step: Step<T>, private val reduction: Reduction<T>) {
+class ReductionSequence<T : Elem>(private val step: Step<T>,
+                                  private val reduction: Reduction<T>) {
     fun apply(graph: Graph) {
         val res = step(graph, mutableSetOf())
         reduction(graph, res)
@@ -220,15 +235,24 @@ private fun constructW(graph: Graph, n: Node,
 }
 
 fun negativeEdges(graph: Graph, toRemove: MutableEdgeSet = mutableSetOf()): EdgeSet {
-    graph.vertexSet()
-            .forEach { n ->
-                val neighs = graph.edgesOf(n)
-                        .filter { it.weight <= 0 }
-                        .map { graph.opposite(n, it) }.toSet()
-                if (!neighs.isEmpty())
-                    Dijkstra(graph, n).negativeEdges(neighs)
-                            .forEach { toRemove.add(it) }
-            }
+    val executor = if (threads == 1) Executors.newSingleThreadExecutor()
+    else Executors.newFixedThreadPool(threads)
+    graph.subgraph(graph.vertexSet())
+    val acu = ConcurrentSkipListSet<Edge>()
+    graph.vertexSet().forEach { n ->
+        executor.submit {
+            val neighs = graph.edgesOf(n)
+                    .filter { it.weight <= 0 && !acu.contains(it)}
+                    .map { graph.opposite(n, it) }.toSet()
+            val res = if (!neighs.isEmpty())
+                Dijkstra(graph, n).negativeEdges(neighs).toSet()
+            else emptySet()
+            acu.addAll(res)
+        }
+    }
+    executor.shutdown()
+    executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS)
+    toRemove.addAll(acu)
     return toRemove
 }
 
@@ -238,8 +262,8 @@ fun negativeVertices(k: Int, graph: Graph, toRemove: MutableNodeSet): NodeSet {
         return negativeVertices(graph, toRemove)
     }
     graph.vertexSet().toSet().filterTo(toRemove) {
-        it.weight <= 0
-                && 3 <= graph.degreeOf(it) && graph.degreeOf(it) <= k
+        it.weight <= 0 && 3 <= graph.degreeOf(it)
+                && graph.degreeOf(it) <= k
                 && nvkTest(graph, it)
     }
     return toRemove
@@ -343,7 +367,6 @@ fun preprocess(graph: Graph) {
 
 class Preprocessor(val graph: Graph,
                    private val reductions: Reductions = allSteps) {
-
     fun preprocess() {
         for (red in reductions) {
             red.apply(graph)

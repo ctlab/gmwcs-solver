@@ -3,6 +3,8 @@ package ru.ifmo.ctddev.gmwcs.solver;
 import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.*;
+import ru.ifmo.ctddev.gmwcs.solver.preprocessing.Preprocessor;
+import ru.ifmo.ctddev.gmwcs.solver.preprocessing.PreprocessorKt;
 
 import java.util.*;
 
@@ -17,6 +19,7 @@ public class BicomponentSolver implements Solver {
     private boolean isSolvedToOptimality;
     private double lb;
     private boolean silence;
+    private int threadsNum;
 
     public BicomponentSolver(RLTSolver solver) {
         rooted = new TimeLimit(Double.POSITIVE_INFINITY);
@@ -181,5 +184,11 @@ public class BicomponentSolver implements Solver {
             isSolvedToOptimality = false;
         }
         return result;
+    }
+
+    public void setThreadsNum(int threadsNum) {
+        solver.setThreadsNum(threadsNum);
+        PreprocessorKt.setThreads(threadsNum);
+        this.threadsNum = threadsNum;
     }
 }

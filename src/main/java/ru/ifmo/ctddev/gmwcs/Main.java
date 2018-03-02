@@ -70,8 +70,8 @@ public class Main {
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         RLTSolver rltSolver = new RLTSolver();
-        rltSolver.setThreadsNum(threadsNum);
         BicomponentSolver solver = new BicomponentSolver(rltSolver);
+        solver.setThreadsNum(threadsNum);
         solver.setUnrootedTL(tl);
         solver.setRootedTL(biggestTL.subLimit(ush == 1.0 ? 0 : rsh / (1.0 - ush)));
         solver.setTLForBiggest(biggestTL);

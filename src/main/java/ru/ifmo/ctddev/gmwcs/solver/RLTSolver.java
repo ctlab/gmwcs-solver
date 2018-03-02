@@ -83,7 +83,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             initVariables();
             addConstraints();
             addObjective();
-            maxSizeConstraints();
+            /*maxSizeConstraints();*/
             initMstWeights();
             long timeBefore = System.currentTimeMillis();
             if (root == null) {
@@ -95,7 +95,9 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             tuning(cplex);
             cplex.use(new MstCallback());
             cplex.use(new LogCallback());
-            if (!graph.vertexSet().isEmpty()) tryMst(this);
+            if (!graph.vertexSet().isEmpty()) {
+                tryMst(this);
+            }
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(),
                     (System.currentTimeMillis() - timeBefore) / 1000.0));
@@ -160,12 +162,11 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         final IloNumVar[] x0_n = new IloNumVar[this.x0.size()];
         Node cur;
         final Set<Edge> zeroEdges = new HashSet<>(this.graph.edgeSet());
-        final Set<Node> nodes = new HashSet<>(solution.getWithRoot());
+        final Set<Node> mstSolution = new HashSet<>(solution.getWithRoot());
         final Set<Node> zeroNodes = new HashSet<>(this.graph.vertexSet());
-        zeroNodes.removeAll(nodes);
         final Deque<Node> deque = new ArrayDeque<>();
         deque.add(root != null ? root
-                : nodes.stream().max(Comparator.comparingDouble(Node::getWeight))
+                : mstSolution.stream().max(Comparator.comparingDouble(Node::getWeight))
                 .get()
         );
         int n = 0;
@@ -176,16 +177,21 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         fill(x0, 0.0);
         x0[0] = 1.0;
         int dist = 0;
+        Set<Node> visited = new HashSet<>();
         while (!deque.isEmpty()) {
             cur = deque.pollFirst();
             x0_n[n] = this.x0.get(cur);
             y_n[n] = this.y.get(cur);
             y[n] = 1.0;
             n++;
-            nodes.remove(cur);
+            visited.add(cur);
+            mstSolution.remove(cur);
             int l = deque.size();
+            final Node c = cur;
             List<Node> neighbors = g.neighborListOf(cur)
-                    .stream().filter(nodes::contains).collect(Collectors.toList());
+                    .stream().filter(node -> mstSolution.contains(node) ||
+                                        isGoodNode(node, this.graph.getEdge(c, node), visited)
+                                    ).collect(Collectors.toList());
             if (!neighbors.isEmpty()) {
                 dist++;
             }
@@ -204,6 +210,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
                 deque.add(node);
             }
         }
+        zeroNodes.removeAll(visited);
         for (Edge e : zeroEdges) {
             vars.add(RLTSolver.this.w.get(e));
             weights.add(0.0);
@@ -248,6 +255,10 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         hld.setSolution(sol_n.toArray(new IloNumVar[0]), solD);
     }
 
+    private boolean isGoodNode(Node node, Edge edge, Set<Node> visited) {
+        return node.getWeight() >= 0 && edge.getWeight() >= 0 && !visited.contains(node);
+    }
+
     private void tryMst(IloVarHolder hld) throws IloException {
         Map<Edge, Double> ews = hld.buildVarGraph(graph, this.y, this.w);
         D solution = null;
@@ -271,10 +282,12 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
                 gr = g;
             }
         }
-        final double best = solution.getBestD();
-        System.err.println("mst found solution with score " + best);
-        if (cplex.getParam(IloCplex.DoubleParam.CutLo) < best) {
-            newSolution(solution, gr, this.root, hld);
+        if (solution != null) {
+            final double best = solution.getBestD();
+            System.err.println("mst found solution with score " + best);
+            if (cplex.getParam(IloCplex.DoubleParam.CutLo) < best) {
+                newSolution(solution, gr, this.root, hld);
+            }
         }
     }
 
@@ -378,6 +391,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             cplex.setOut(null);
             cplex.setWarning(null);
         }
+        cplex.setParam(IloCplex.BooleanParam.PreInd, false);
         cplex.setParam(IloCplex.IntParam.Threads, threads);
         cplex.setParam(IloCplex.IntParam.ParallelMode, -1);
         cplex.setParam(IloCplex.IntParam.MIPOrdType, 3);
@@ -525,7 +539,6 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
     }
 
     private class LogCallback extends IloCplex.IncumbentCallback {
-
         @Override
         protected void main() throws IloException {
             System.err.println(this.getSolutionSource() == 118);
