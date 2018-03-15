@@ -96,7 +96,7 @@ fun main(args: Array<String>) {
             edgeFile, File(edgeFile.toString() + ".out"))
     val graph = graphIO.read()
     // val tests = mutableListOf<NamedReductions>()
-    val samples = sampleGraph(graph)
+    val samples = sampleGraph(graph, 500, 5)
     for (sample in samples) {
         println("Solving sample ${sample.name}")
         RLTSolver().solve(sample.graph)
