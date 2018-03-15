@@ -4,6 +4,7 @@ import ru.ifmo.ctddev.gmwcs.graph.Edge
 import ru.ifmo.ctddev.gmwcs.graph.Elem
 import ru.ifmo.ctddev.gmwcs.graph.Graph
 import ru.ifmo.ctddev.gmwcs.graph.Node
+import ru.ifmo.ctddev.gmwcs.solver.MSTSolver
 import ru.ifmo.ctddev.gmwcs.solver.SolverException
 import java.util.concurrent.ConcurrentSkipListSet
 import java.util.concurrent.Executors
