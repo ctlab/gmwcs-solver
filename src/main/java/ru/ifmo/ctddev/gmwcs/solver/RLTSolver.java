@@ -67,10 +67,10 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
 
     public void initMstWeights() {
         mstWeights = new HashMap<>();
-        for (Edge e: graph.edgeSet()) {
+        for (Edge e : graph.edgeSet()) {
             mstWeights.put(w.get(e), e.getWeight() > 0 ? 1.0 : 0);
         }
-        for (Node n: graph.vertexSet()) {
+        for (Node n : graph.vertexSet()) {
             mstWeights.put(y.get(n), n.getWeight() > 0 ? 1.0 : 0);
         }
     }
@@ -83,7 +83,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             initVariables();
             addConstraints();
             addObjective();
-            /*maxSizeConstraints();*/
+            maxSizeConstraints();
             initMstWeights();
             long timeBefore = System.currentTimeMillis();
             if (root == null) {
@@ -190,8 +190,8 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             final Node c = cur;
             List<Node> neighbors = g.neighborListOf(cur)
                     .stream().filter(node -> mstSolution.contains(node) ||
-                                        isGoodNode(node, this.graph.getEdge(c, node), visited)
-                                    ).collect(Collectors.toList());
+                            isGoodNode(node, this.graph.getEdge(c, node), visited)
+                    ).collect(Collectors.toList());
             if (!neighbors.isEmpty()) {
                 dist++;
             }
@@ -415,10 +415,11 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             rs[k - 1] = cplex.prod(k, y.get(node));
             k--;
         }
-        IloNumVar sum = cplex.numVar(0, n, "prSum");
-        cplex.addEq(sum, cplex.sum(terms));
+ //       IloNumVar sum = cplex.numVar(0, n, "prSum");
+//        cplex.addEq(sum, cplex.sum(terms));
         for (int i = 0; i < n; i++) {
-            cplex.addGe(sum, rs[i]);
+            cplex.addLe(terms[i], rs[i]);
+  //          cplex.addGe(cplex.sum(terms), rs[i]);
         }
     }
 
