@@ -16,7 +16,7 @@ public class MSTSolver {
     private double cost;
     private List<Edge> res;
 
-    MSTSolver(Graph g, Map<Edge, Double> edgeWeights, Node root) {
+    public MSTSolver(Graph g, Map<Edge, Double> edgeWeights, Node root) {
         this.g = g;
         this.ws = edgeWeights;
         this.root = root;
