@@ -255,11 +255,11 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         if (solution != null) {
             final double best = solution.getWithRootD();
             System.err.println("mst heuristic found solution with score " + best);
-//            if (cplex.getParam(IloCplex.DoubleParam.CutLo) < best) {
+            if (cplex.getParam(IloCplex.DoubleParam.CutLo) < best) {
                 CplexSolution sol = tryMstSolution(gr, solution.getRoot(),
                         solution.getWithRoot());
                 hld.setSolution(sol.variables(), sol.values());
- //           }
+            }
         }
     }
 
@@ -366,8 +366,8 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         cplex.setParam(IloCplex.BooleanParam.PreInd, false);
         cplex.setParam(IloCplex.IntParam.Threads, threads);
         cplex.setParam(IloCplex.IntParam.ParallelMode, -1);
-        cplex.setParam(IloCplex.DoubleParam.EpRHS, 1.0e-3);
-        cplex.setParam(IloCplex.DoubleParam.EpInt, 1.0e-3);
+        cplex.setParam(IloCplex.DoubleParam.EpRHS, 1.0e-4);
+        cplex.setParam(IloCplex.DoubleParam.EpInt, 1.0e-4);
         cplex.setParam(IloCplex.IntParam.MIPOrdType, 3);
         if (tl.getRemainingTime() <= 0) {
             cplex.setParam(IloCplex.DoubleParam.TiLim, EPS);
@@ -388,8 +388,6 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             rs[k - 1] = cplex.prod(k, y.get(node));
             k--;
         }
-        //       IloNumVar sum = cplex.numVar(0, n, "prSum");
-//        cplex.addEq(sum, cplex.sum(terms));
         for (int i = 0; i < n; i++) {
             cplex.addLe(terms[i], rs[i]);
             cplex.addGe(cplex.sum(terms), rs[i]);
