@@ -4,10 +4,10 @@ import io.kotlintest.specs.StringSpec
 import ru.ifmo.ctddev.gmwcs.graph_kt.Edge
 import ru.ifmo.ctddev.gmwcs.graph_kt.Graph
 import ru.ifmo.ctddev.gmwcs.graph_kt.Node
-import java.util.*
 import ru.ifmo.ctddev.gmwcs.solver.greedyElimination
 import ru.ifmo.ctddev.gmwcs.solver.treeDecomposition
-import kotlin.streams.asSequence
+import java.util.*
+import kotlin.streams.*
 
 fun abs(x: Int) = Math.abs(x)
 

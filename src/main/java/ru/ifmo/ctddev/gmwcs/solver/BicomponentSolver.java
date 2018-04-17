@@ -142,10 +142,9 @@ public class BicomponentSolver implements Solver {
         }
         solver.setLB(lb);
         List<Elem> solution = solve(main, biggest);
-        List<Elem> result = new ArrayList<>();
-        result.addAll(solution);
+        List<Elem> result = new ArrayList<>(solution);
         solver.setLB(Utils.sum(result));
-        solution.stream().forEach(u -> result.addAll(u.getAbsorbed()));
+        solution.forEach(u -> result.addAll(u.getAbsorbed()));
         repairCutpoints(history);
         return result;
     }

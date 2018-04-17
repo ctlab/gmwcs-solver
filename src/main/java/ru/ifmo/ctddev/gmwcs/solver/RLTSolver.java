@@ -149,7 +149,90 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         }
     }
 
-    void newSolution(D solution, Graph g, Node root, IloVarHolder hld) throws IloException {
+    private CplexSolution tryMstSolution(Graph tree, Node root,
+                                         Set<Node> mstSol) {
+        CplexSolution solution = new CplexSolution();
+        final Set<Edge> unvisitedEdges = new HashSet<>(this.graph.edgeSet());
+        final Set<Node> unvisitedNodes = new HashSet<>(this.graph.vertexSet());
+        final Deque<Node> deque = new ArrayDeque<>();
+        deque.add(root);
+        Map<Node, Integer> ds = new HashMap<>();
+        ds.put(root, 0);
+        Set<Node> visitedNodes = new HashSet<>();
+        Set<Edge> visitedEdges = new HashSet<>();
+        visitedNodes.add(root);
+        mstSol.remove(root);
+        while (!deque.isEmpty()) {
+            final Node cur = deque.pollFirst();
+            solution.addVariable(x0, cur, cur == root ? 1 : 0);
+            solution.addVariable(y, cur, 1);
+            List<Node> neighbors = tree.neighborListOf(cur)
+                    .stream().filter(node -> mstSol.contains(node) ||
+                            isGoodNode(node, tree.getEdge(cur, node), visitedNodes)
+                    ).collect(Collectors.toList());
+            visitedNodes.addAll(neighbors);
+            mstSol.removeAll(neighbors);
+            for (Node node : neighbors) {
+                Edge e = tree.getEdge(node, cur);
+                unvisitedEdges.remove(e);
+                visitedEdges.add(e);
+                solution.addVariable(w, e, 1.0);
+                deque.add(node);
+            }
+        }
+        unvisitedNodes.removeAll(visitedNodes);
+        for (Edge e : new ArrayList<>(unvisitedEdges)) {
+            Node u = graph.getEdgeSource(e), v = graph.getEdgeTarget(e);
+            IloNumVar from = getX(e, u), to = getX(e, v);
+            if (visitedNodes.contains(u)
+                    && visitedNodes.contains(v) && e.getWeight() >= 0) {
+                unvisitedEdges.remove(e);
+                visitedEdges.add(e);
+            } else {
+                solution.addNullVariables(w.get(e), from, to);
+            }
+        }
+        deque.add(root);
+        visitedNodes.remove(root);
+        while (!deque.isEmpty()) {
+            final Node cur = deque.poll();
+            List<Node> neighbors = new ArrayList<>();
+            for (Edge e : graph.edgesOf(cur).stream().filter(visitedEdges::contains)
+                    .collect(Collectors.toList())) {
+                neighbors.add(graph.opposite(cur, e));
+            }
+            for (Node node : neighbors) {
+                if (!visitedNodes.contains(node))
+                    continue;
+                deque.add(node);
+                visitedNodes.remove(node);
+                Edge e = graph.getEdge(node, cur);
+                // graph.getAllEdges(node, cur).stream()
+                //.filter(visitedEdges::contains).findFirst().get();
+                solution.addVariable(getX(e, node), 1);
+                solution.addVariable(getX(e, cur), 0);
+                visitedEdges.remove(e);
+                ds.put(node, ds.get(cur) + 1);
+            }
+        }
+        for (Edge e : visitedEdges) {
+            Node u = graph.getEdgeSource(e), v = graph.getEdgeTarget(e);
+            IloNumVar from = getX(e, u), to = getX(e, v);
+            solution.addVariable(w, e, 1);
+            solution.addNullVariables(from, to);
+        }
+        assert visitedNodes.isEmpty();
+        for (Map.Entry<Node, Integer> nd : ds.entrySet()) {
+            solution.addVariable(d, nd.getKey(), nd.getValue());
+        }
+        for (Node node : unvisitedNodes) {
+            solution.addNullVariables(x0.get(node), d.get(node), y.get(node));
+        }
+        return solution;
+    }
+    /*
+    private void newSolution(D solution, Graph g, Node root,
+                             IloVarHolder hld) throws IloException {
         List<IloNumVar> vars = new ArrayList<>();
         List<Double> weights = new ArrayList<>();
         final Double[] w = new Double[this.w.size()];
@@ -254,6 +337,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         }
         hld.setSolution(sol_n.toArray(new IloNumVar[0]), solD);
     }
+    */
 
     private boolean isGoodNode(Node node, Edge edge, Set<Node> visited) {
         return node.getWeight() >= 0 && edge.getWeight() >= 0 && !visited.contains(node);
@@ -283,10 +367,12 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             }
         }
         if (solution != null) {
-            final double best = solution.getBestD();
+            final double best = solution.getWithRootD();
             System.err.println("mst found solution with score " + best);
             if (cplex.getParam(IloCplex.DoubleParam.CutLo) < best) {
-                newSolution(solution, gr, this.root, hld);
+                CplexSolution sol = tryMstSolution(gr, solution.getRoot(),
+                        solution.getWithRoot());
+                setSolution(sol.variables(), sol.values());
             }
         }
     }
@@ -404,8 +490,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
 
     private void breakRootSymmetry() throws IloException {
         int n = graph.vertexSet().size();
-        PriorityQueue<Node> nodes = new PriorityQueue<>();
-        nodes.addAll(graph.vertexSet());
+        PriorityQueue<Node> nodes = new PriorityQueue<>(graph.vertexSet());
         int k = n;
         IloNumExpr[] terms = new IloNumExpr[n];
         IloNumExpr[] rs = new IloNumExpr[n];
@@ -415,11 +500,11 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             rs[k - 1] = cplex.prod(k, y.get(node));
             k--;
         }
- //       IloNumVar sum = cplex.numVar(0, n, "prSum");
+        //       IloNumVar sum = cplex.numVar(0, n, "prSum");
 //        cplex.addEq(sum, cplex.sum(terms));
         for (int i = 0; i < n; i++) {
             cplex.addLe(terms[i], rs[i]);
-  //          cplex.addGe(cplex.sum(terms), rs[i]);
+            cplex.addGe(cplex.sum(terms), rs[i]);
         }
     }
 
