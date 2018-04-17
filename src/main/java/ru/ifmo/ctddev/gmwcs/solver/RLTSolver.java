@@ -11,10 +11,6 @@ import ru.ifmo.ctddev.gmwcs.graph.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
-
-import static java.util.Arrays.*;
 
 public class RLTSolver extends IloVarHolder implements RootedSolver {
     public static final double EPS = 0.01;
@@ -207,8 +203,6 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
                 deque.add(node);
                 visitedNodes.remove(node);
                 Edge e = graph.getEdge(node, cur);
-                // graph.getAllEdges(node, cur).stream()
-                //.filter(visitedEdges::contains).findFirst().get();
                 solution.addVariable(getX(e, node), 1);
                 solution.addVariable(getX(e, cur), 0);
                 visitedEdges.remove(e);
@@ -260,12 +254,12 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         }
         if (solution != null) {
             final double best = solution.getWithRootD();
-            System.err.println("mst found solution with score " + best);
-            if (cplex.getParam(IloCplex.DoubleParam.CutLo) < best) {
+            System.err.println("mst heuristic found solution with score " + best);
+//            if (cplex.getParam(IloCplex.DoubleParam.CutLo) < best) {
                 CplexSolution sol = tryMstSolution(gr, solution.getRoot(),
                         solution.getWithRoot());
-                setSolution(sol.variables(), sol.values());
-            }
+                hld.setSolution(sol.variables(), sol.values());
+ //           }
         }
     }
 
@@ -372,6 +366,8 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         cplex.setParam(IloCplex.BooleanParam.PreInd, false);
         cplex.setParam(IloCplex.IntParam.Threads, threads);
         cplex.setParam(IloCplex.IntParam.ParallelMode, -1);
+        cplex.setParam(IloCplex.DoubleParam.EpRHS, 1.0e-3);
+        cplex.setParam(IloCplex.DoubleParam.EpInt, 1.0e-3);
         cplex.setParam(IloCplex.IntParam.MIPOrdType, 3);
         if (tl.getRemainingTime() <= 0) {
             cplex.setParam(IloCplex.DoubleParam.TiLim, EPS);
