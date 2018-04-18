@@ -64,10 +64,10 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
     public void initMstWeights() {
         mstWeights = new HashMap<>();
         for (Edge e : graph.edgeSet()) {
-            mstWeights.put(w.get(e), e.getWeight() > 0 ? 1.0 : 0);
+            mstWeights.put(w.get(e), e.getWeight() >= 0 ? 1.0 : 0);
         }
         for (Node n : graph.vertexSet()) {
-            mstWeights.put(y.get(n), n.getWeight() > 0 ? 1.0 : 0);
+            mstWeights.put(y.get(n), n.getWeight() >= 0 ? 1.0 : 0);
         }
     }
 
@@ -89,7 +89,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             }
             breakTreeSymmetries();
             tuning(cplex);
-            cplex.use(new MstCallback());
+            cplex.use(new MstCallback(0));
             cplex.use(new LogCallback());
             if (!graph.vertexSet().isEmpty()) {
                 tryMst(this);
@@ -119,11 +119,12 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
     }
 
     private class MstCallback extends IloCplex.HeuristicCallback {
-        private int counter = 0;
+        private int counter;
         private IloVarHolder hld;
 
-        MstCallback() {
+        MstCallback(int counter) {
             super();
+            this.counter = counter;
             hld = new IloVarHolder() {
                 @Override
                 protected void setSolution(IloNumVar[] v, double[] d) throws IloException {
@@ -142,6 +143,11 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
                 tryMst(this.hld);
             }
             counter++;
+        }
+
+        @Override
+        protected MstCallback clone() {
+            return new MstCallback(counter);
         }
     }
 
@@ -226,7 +232,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
     }
 
     private boolean isGoodNode(Node node, Edge edge, Set<Node> visited) {
-        return node.getWeight() >= 0 && edge.getWeight() >= 0 && !visited.contains(node);
+        return node.getWeight() + edge.getWeight() >= 0 && !visited.contains(node);
     }
 
     private void tryMst(IloVarHolder hld) throws IloException {
@@ -234,6 +240,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         D solution = null;
         Graph gr = null;
         for (Set<Node> set : graph.connectedSets()) {
+            if (set.isEmpty()) continue;
             final Node root = Optional.ofNullable(this.root).orElse(
                     set.stream().max(
                             Comparator.comparingDouble(Node::getWeight)
@@ -254,8 +261,8 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         }
         if (solution != null) {
             final double best = solution.getWithRootD();
-            System.err.println("mst heuristic found solution with score " + best);
-            if (cplex.getParam(IloCplex.DoubleParam.CutLo) < best) {
+            if (best > 0) {
+                System.err.println("mst heuristic found solution with score " + best);
                 CplexSolution sol = tryMstSolution(gr, solution.getRoot(),
                         solution.getWithRoot());
                 hld.setSolution(sol.variables(), sol.values());
@@ -363,9 +370,10 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             cplex.setOut(null);
             cplex.setWarning(null);
         }
-        cplex.setParam(IloCplex.BooleanParam.PreInd, false);
+        cplex.setParam(IloCplex.BooleanParam.PreInd, true);
         cplex.setParam(IloCplex.IntParam.Threads, threads);
-        cplex.setParam(IloCplex.IntParam.ParallelMode, -1);
+        cplex.setParam(IloCplex.IntParam.ParallelMode,
+                IloCplex.ParallelMode.Opportunistic);
         cplex.setParam(IloCplex.DoubleParam.EpRHS, 1.0e-4);
         cplex.setParam(IloCplex.DoubleParam.EpInt, 1.0e-4);
         cplex.setParam(IloCplex.IntParam.MIPOrdType, 3);
@@ -513,8 +521,10 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
     private class LogCallback extends IloCplex.IncumbentCallback {
         @Override
         protected void main() throws IloException {
-            System.err.println(this.getSolutionSource() == 118);
-            System.err.println("Value " + this.getIncumbentObjValue());
+            if (this.getSolutionSource() == 118) { //118 is UserSolution source
+                System.out.println("MST Heuristic solution");
+                System.out.println("Value " + this.getIncumbentObjValue());
+            }
         }
     }
 }
