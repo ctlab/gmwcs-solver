@@ -71,6 +71,7 @@ public class Main {
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         RLTSolver rltSolver = new RLTSolver();
         BicomponentSolver solver = new BicomponentSolver(rltSolver);
+        solver.suppressOutput();
         solver.setThreadsNum(threadsNum);
         solver.setUnrootedTL(tl);
         solver.setRootedTL(biggestTL.subLimit(ush == 1.0 ? 0 : rsh / (1.0 - ush)));
@@ -81,10 +82,9 @@ public class Main {
             Graph graph = graphIO.read();
             System.out.print("Graph with " + graph.vertexSet().size() + " nodes ");
             System.out.println("and " + graph.edgeSet().size() + " edges");
-            double before = System.currentTimeMillis();
+            long before = System.currentTimeMillis();
             List<Elem> elems = solver.solve(graph);
-            double delta = System.currentTimeMillis();
-            System.out.println("Solution took " + (delta - before) / 1000);
+            long delta = System.currentTimeMillis() - before;
             Graph res = new Graph();
             for (Elem elem : elems) {
                 if (elem instanceof Edge) {
@@ -102,11 +102,14 @@ public class Main {
                     }
                 }
             }
+            if (solver.isSolvedToOptimality()) {
+                System.out.println("SOLVED TO OPTIMALITY");
+            }
             System.out.println(elems.stream().mapToDouble(Elem::getWeight).sum());
+            System.out.println("time:" + delta);
             // PreprocessorKt.preprocess(res);
             // PreprocessorKt.findPosCycles(res);
             // assert(res.edgeSet().size() == res.vertexSet().size() - 1);
-
             graphIO.write(elems);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());

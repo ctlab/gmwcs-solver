@@ -110,11 +110,10 @@ public class SimpleIO implements GraphIO {
 
     @Override
     public void write(List<Elem> elems) throws IOException {
-        Set<Elem> elemSet = new LinkedHashSet<>();
         if (elems == null) {
             elems = new ArrayList<>();
         }
-        elemSet.addAll(elems);
+        Set<Elem> elemSet = new LinkedHashSet<>(elems);
         writeNodes(elemSet);
         writeEdges(elemSet);
     }
@@ -126,26 +125,27 @@ public class SimpleIO implements GraphIO {
                 Edge edge = edgeMap.get(p.first).get(p.second);
                 if (elems.contains(edge)) {
                     sum += edge.getWeight();
+                    writer.write(p.first + "\t" + p.second); // + "\t" + (elems.contains(edge) ? edge.getWeight() : "n/a"));
+                    writer.write("\n");
                 }
-                writer.write(p.first + "\t" + p.second + "\t" + (elems.contains(edge) ? edge.getWeight() : "n/a"));
-                writer.write("\n");
             }
-            writer.write("#subnet edge score\t" + sum);
+         // writer.write("#subnet edge score\t" + sum);
         }
     }
 
     private void writeNodes(Set<Elem> elems) throws IOException {
-        double sum = 0.0;
+ //       double sum = 0.0;
         try (Writer writer = new BufferedWriter(new FileWriter(nodeOut))) {
             for (String name : nodeList) {
                 Node node = nodeMap.get(name);
                 if (elems.contains(node)) {
-                    sum += node.getWeight();
+                    writer.write(name + "\n");
+//                    sum += node.getWeight();
                 }
-                writer.write(name + "\t" + (elems.contains(node) ? node.getWeight() : "n/a"));
-                writer.write("\n");
+//                writer.write(name + "\t" + (elems.contains(node) ? node.getWeight() : "n/a"));
+ //               writer.write("\n");
             }
-            writer.write("#subnet node score\t" + sum);
+    //  writer.write("#subnet node score\t" + sum);
         }
     }
 }

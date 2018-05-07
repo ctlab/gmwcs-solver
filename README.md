@@ -63,7 +63,7 @@ Running sample
 
     java -Djava.library.path=PATH_TO_CPLEX -jar target/gmwcs.jar -n nodes -e edges
     
-The output should like this:
+The output should look like this:
 ```
 Graph decomposing takes 0.011 seconds.
 Warning: Control callbacks may disable some MIP features.
@@ -124,24 +124,19 @@ Sequential b&c:
                           ------------
 Total (root+branch&cut) =    0,01 sec. (1,09 ticks)
 Infeasibility row 'c1':  0  = 1.
-Presolve time = 0,00 sec. (0,00 ticks
+Presolve time = 0,00 sec. (0,00 ticks)
 ```
 
 Two files with the result `nodes.out` and `edges.out` will be created:
 ```
 $ cat nodes.out 
-1	-3.0
-2	-5.0
-3	0.0
-4	2.0
-5	n/a
-#subnet node score	-6.0
+1
+2
+3
+4
 $ cat edges.out
-1	2	4.0
-1	3	7.0
-2	3	5.0
-3	4	1.0
-4	5	n/a
-1	5	n/a
-#subnet edge score	17.0
+1	2
+1	3
+2	3
+3	4
 ```

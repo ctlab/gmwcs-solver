@@ -48,7 +48,6 @@ public class BicomponentSolver implements Solver {
             System.out.print("Preprocessing deleted " + (g.vertexSet().size() - graph.vertexSet().size()) + " nodes ");
             System.out.println("and " + (g.edgeSet().size() - graph.edgeSet().size()) + " edges.");
         }
-        // findPosCycles(graph);
         isSolvedToOptimality = true;
         solver.setLB(-Double.MAX_VALUE);
         if (graph.vertexSet().size() == 0) {

@@ -90,7 +90,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             breakTreeSymmetries();
             tuning(cplex);
             cplex.use(new MstCallback(0));
-            cplex.use(new LogCallback());
+//            cplex.use(new LogCallback());
             if (!graph.vertexSet().isEmpty()) {
                 tryMst(this);
             }
@@ -139,7 +139,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         }
 
         protected void main() throws IloException {
-            if (counter % 1000 == 0 && counter / 1000 < 100) {
+            if (counter % 1000 == 0 && counter / 1000 < 10) {
                 tryMst(this.hld);
             }
             counter++;
@@ -262,7 +262,6 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
         if (solution != null) {
             final double best = solution.getWithRootD();
             if (best > 0) {
-                System.err.println("mst heuristic found solution with score " + best);
                 CplexSolution sol = tryMstSolution(gr, solution.getRoot(),
                         solution.getWithRoot());
                 hld.setSolution(sol.variables(), sol.values());
@@ -370,7 +369,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             cplex.setOut(null);
             cplex.setWarning(null);
         }
-        cplex.setParam(IloCplex.BooleanParam.PreInd, true);
+        cplex.setParam(IloCplex.BooleanParam.PreInd, false);
         cplex.setParam(IloCplex.IntParam.Threads, threads);
         cplex.setParam(IloCplex.IntParam.ParallelMode,
                 IloCplex.ParallelMode.Opportunistic);

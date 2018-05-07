@@ -16,6 +16,7 @@ import java.util.stream.Stream
  * Created by Nikolay Poperechnyi on 03/10/2017.
  */
 
+private var logLevel = 0
 
 private var threads: Int = 1
 
@@ -60,7 +61,7 @@ val negE = ReductionSequence(::negativeEdges, ::logAndRemoveEdges)
 val cns = ReductionSequence(::cns, ::logAndRemoveNodes)
 
 val nvk = ReductionSequence(
-        { graph, toRemove -> negativeVertices(5, graph, toRemove) }
+        { graph, toRemove -> negativeVertices(4, graph, toRemove) }
         , ::logAndRemoveNodes
 )
 
@@ -70,11 +71,7 @@ val isolated = ReductionSequence(
 )
 
 val allSteps: Reductions = listOf(isolated, mergeNeg, mergePos, negE, negV, nvk, cns)
-//val allSteps: Reductions = listOf(mergeNeg, mergePos, negE)
-
-//val allSteps: Reductions = listOf(mergeNeg, mergePos, cns)
-
-//val allSteps: Reductions = emptyList()
+//val allSteps: Reductions = listOf(isolated, mergeNeg, mergePos, negE, negV, cns)
 
 fun isolatedVertices(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
     return graph.vertexSet().filterTo(toRemove, { it.weight <= 0 && graph.degreeOf(it) == 0 })
@@ -108,7 +105,7 @@ fun mergePositive(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): Node
         val (from, to) = graph.getAdjacent(edge)
         val ew = edge.weight
         if (from == to) {
-            merge(graph, edge, from);
+            merge(graph, edge, from)
         } else if (ew >= 0 && ew + from.weight >= 0 && ew + to.weight >= 0) {
             merge(graph, edge, from, to)
         }
@@ -211,7 +208,7 @@ private fun constructW(graph: Graph, n: Node,
     var wSum = minOf(n.weight, 0.0)
     val w = mutableSetOf(n)
     for (i in 1..2) //todo: test another W size
-        for (v in w.toList()) {
+        for (v in w.toTypedArray()) {
             for (u in graph.neighborListOf(v)
                     .filter { !toRemove.contains(it) && !w.contains(it) }) {
                 val edge = graph.getEdge(u, v)
@@ -309,7 +306,7 @@ private fun dfsC(v: Node, g: Graph, visited: MutableMap<Node, Int>
     if (visited.getOrDefault(v, 0) == 2) {
         return false
     }
-    visited.put(v, 1)
+    visited[v] = 1
     for ((e, u) in g.edgesOf(v)
             .filter { it.weight >= 0 }
             .map { Pair(it, g.opposite(v, it)) }) {
@@ -326,7 +323,7 @@ private fun dfsC(v: Node, g: Graph, visited: MutableMap<Node, Int>
             }
         }
     }
-    visited.put(v, 2)
+    visited[v] = 2
     return false
 }
 
@@ -345,11 +342,15 @@ fun findPosCycles(graph: Graph): Boolean {
 
 
 private fun logEdges(graph: Graph, edges: EdgeSet) {
-    println("${edges.size} edges to remove")
+    if (logLevel > 0) {
+        println("${edges.size} edges to remove")
+    }
 }
 
 private fun logNodes(graph: Graph, nodes: NodeSet) {
-    println("${nodes.size} nodes to remove")
+    if (logLevel > 0) {
+        println("${nodes.size} nodes to remove")
+    }
 }
 
 private fun logAndRemoveEdges(graph: Graph, edges: EdgeSet) {
