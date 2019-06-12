@@ -3,12 +3,10 @@ package ru.ifmo.ctddev.gmwcs.solver;
 import ru.ifmo.ctddev.gmwcs.Pair;
 import ru.ifmo.ctddev.gmwcs.TimeLimit;
 import ru.ifmo.ctddev.gmwcs.graph.*;
-import ru.ifmo.ctddev.gmwcs.solver.preprocessing.Preprocessor;
 import ru.ifmo.ctddev.gmwcs.solver.preprocessing.PreprocessorKt;
 
 import java.util.*;
 
-import static ru.ifmo.ctddev.gmwcs.solver.preprocessing.PreprocessorKt.findPosCycles;
 import static ru.ifmo.ctddev.gmwcs.solver.preprocessing.PreprocessorKt.preprocess;
 
 public class BicomponentSolver implements Solver {
@@ -26,6 +24,7 @@ public class BicomponentSolver implements Solver {
         unrooted = biggest = rooted;
         this.solver = solver;
         lb = 0;
+        // suppressOutput();
     }
 
     public void setRootedTL(TimeLimit tl) {
@@ -44,10 +43,8 @@ public class BicomponentSolver implements Solver {
         Graph g = graph;
         graph = graph.subgraph(graph.vertexSet());
         preprocess(graph);
-        if (!silence) {
-            System.out.print("Preprocessing deleted " + (g.vertexSet().size() - graph.vertexSet().size()) + " nodes ");
-            System.out.println("and " + (g.edgeSet().size() - graph.edgeSet().size()) + " edges.");
-        }
+        System.out.print("Preprocessing deleted " + (g.vertexSet().size() - graph.vertexSet().size()) + " nodes ");
+        System.out.println("and " + (g.edgeSet().size() - graph.edgeSet().size()) + " edges.");
         isSolvedToOptimality = true;
         solver.setLB(-Double.MAX_VALUE);
         if (graph.vertexSet().size() == 0) {

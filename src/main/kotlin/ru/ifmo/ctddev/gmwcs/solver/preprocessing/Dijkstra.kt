@@ -44,16 +44,9 @@ class Dijkstra(private val graph: Graph, private val from: Node,
                 if (d[adj.num] > w) {
                     d[adj.num] = w
                     queue.add(adj)
-                    if (save) {
-                        paths[adj.num] = paths[cur.num].plus(e.num)
-                    }
                 }
             }
         }
-    }
-
-    fun paths(): Array<List<Int>> {
-        return paths
     }
 
     fun negativeDistances(neighbors: NodeSet): Map<Node, Double> =

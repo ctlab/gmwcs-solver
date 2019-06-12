@@ -4,6 +4,7 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import ru.ifmo.ctddev.gmwcs.graph.*;
 import ru.ifmo.ctddev.gmwcs.solver.*;
+import ru.ifmo.ctddev.gmwcs.solver.preprocessing.PreprocessorKt;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,7 +72,6 @@ public class Main {
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         RLTSolver rltSolver = new RLTSolver();
         BicomponentSolver solver = new BicomponentSolver(rltSolver);
-        solver.suppressOutput();
         solver.setThreadsNum(threadsNum);
         solver.setUnrootedTL(tl);
         solver.setRootedTL(biggestTL.subLimit(ush == 1.0 ? 0 : rsh / (1.0 - ush)));
@@ -107,7 +107,7 @@ public class Main {
             }
             System.out.println(elems.stream().mapToDouble(Elem::getWeight).sum());
             System.out.println("time:" + delta);
-            // PreprocessorKt.preprocess(res);
+            PreprocessorKt.preprocess(res);
             // PreprocessorKt.findPosCycles(res);
             // assert(res.edgeSet().size() == res.vertexSet().size() - 1);
             graphIO.write(elems);

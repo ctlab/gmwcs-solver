@@ -89,9 +89,11 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             }
             breakTreeSymmetries();
             tuning(cplex);
-            cplex.use(new MstCallback(0));
-//            cplex.use(new LogCallback());
-            if (!graph.vertexSet().isEmpty()) {
+            if (!suppressOutput) {
+                cplex.use(new LogCallback());
+            }
+            if (graph.vertexSet().size() >= 25) {
+                cplex.use(new MstCallback(0));
                 tryMst(this);
             }
             boolean solFound = cplex.solve();
@@ -369,7 +371,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             cplex.setOut(null);
             cplex.setWarning(null);
         }
-        cplex.setParam(IloCplex.BooleanParam.PreInd, false);
+        cplex.setParam(IloCplex.BooleanParam.PreInd, true);
         cplex.setParam(IloCplex.IntParam.Threads, threads);
         cplex.setParam(IloCplex.IntParam.ParallelMode,
                 IloCplex.ParallelMode.Opportunistic);
@@ -395,9 +397,10 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             rs[k - 1] = cplex.prod(k, y.get(node));
             k--;
         }
+        IloNumVar sum = cplex.numVar(0, n, "prSum");
+        cplex.addEq(sum, cplex.sum(terms));
         for (int i = 0; i < n; i++) {
-            cplex.addLe(terms[i], rs[i]);
-            cplex.addGe(cplex.sum(terms), rs[i]);
+            cplex.addGe(sum, rs[i]);
         }
     }
 

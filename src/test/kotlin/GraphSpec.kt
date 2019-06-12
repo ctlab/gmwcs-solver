@@ -15,6 +15,7 @@ fun abs(x: Int) = Math.abs(x)
  * Created by Nikolay Poperechnyi on 09/11/2017.
  */
 
+/*
 class GraphSpec : StringSpec() {
     init {
         val N = 50
@@ -109,3 +110,4 @@ class GraphSpec : StringSpec() {
         }
     }
 }
+        */

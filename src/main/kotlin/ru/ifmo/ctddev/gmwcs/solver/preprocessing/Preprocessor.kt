@@ -16,7 +16,7 @@ import java.util.stream.Stream
  * Created by Nikolay Poperechnyi on 03/10/2017.
  */
 
-private var logLevel = 0
+private var logLevel = 1
 
 private var threads: Int = 1
 
@@ -69,12 +69,34 @@ val isolated = ReductionSequence(
         { graph, toRemove -> isolatedVertices(graph, toRemove) }
         , ::logAndRemoveNodes
 )
+val leaves = ReductionSequence(
+        {graph, toRemove -> l(graph, toRemove) }
+        , ::logAndRemoveNodes
+)
 
-val allSteps: Reductions = listOf(isolated, mergeNeg, mergePos, negE, negV, nvk, cns)
-//val allSteps: Reductions = listOf(isolated, mergeNeg, mergePos, negE, negV, cns)
+// val allSteps: Reductions = listOf(isolated, mergeNeg, mergePos)
+val allSteps: Reductions = listOf(isolated, mergeNeg, mergePos, negE, negV, cns)
 
 fun isolatedVertices(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
     return graph.vertexSet().filterTo(toRemove, { it.weight <= 0 && graph.degreeOf(it) == 0 })
+}
+
+fun l(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
+    val prim = graph.vertexSet().max()
+    for (n in graph.vertexSet().filter { graph.degreeOf(it) == 1}) {
+        if (n == prim || graph.edgesOf(n).size > 1)
+            continue
+        val e = graph.edgesOf(n).iterator().next()
+        val opposite = graph.opposite(n, e)
+        if (n.weight + e.weight >= 0) {
+            opposite.absorb(n)
+            opposite.absorb(e)
+            toRemove.add(n)
+        } else if (n.weight + e.weight <= 0) {
+            toRemove.add(n)
+        }
+    }
+    return toRemove
 }
 
 fun mergeNegative(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
@@ -240,7 +262,7 @@ fun negativeEdges(graph: Graph, toRemove: MutableEdgeSet = mutableSetOf()): Edge
     graph.vertexSet().forEach { n ->
         executor.submit {
             val neighs = graph.edgesOf(n)
-                    .filter { it.weight <= 0 && !acu.contains(it)}
+                    .filter { it.num < n.num && it.weight <= 0 && !acu.contains(it)}
                     .map { graph.opposite(n, it) }.toSet()
             val res = if (!neighs.isEmpty())
                 Dijkstra(graph, n).negativeEdges(neighs).toSet()
@@ -370,9 +392,9 @@ fun preprocess(graph: Graph) {
 class Preprocessor(val graph: Graph,
                    private val reductions: Reductions = allSteps) {
     fun preprocess() {
+
         for (red in reductions) {
             red.apply(graph)
         }
     }
-
 }

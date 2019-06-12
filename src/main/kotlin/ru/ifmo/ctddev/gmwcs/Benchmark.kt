@@ -16,7 +16,7 @@ import java.util.*
  */
 
 
-typealias NamedReductions = Pair<String, List<ReductionSequence<out Elem>>>
+typealias NamedReductions = kotlin.Pair<String, List<ReductionSequence<out Elem>>>
 
 data class NamedGraph(val graph: Graph, val name: String)
 
@@ -29,7 +29,7 @@ fun benchmark(graphs: Array<NamedGraph>, preprocessingList: List<NamedReductions
 private fun benchmarkGraph(graph: NamedGraph, reductions: List<NamedReductions>) {
     println("Benchmarks for graph ${graph.name}")
     for (red in reductions) {
-        benchmarkGraphPreprocessing(graph.graph, red)
+        benchmarkGraphPreprocessing(graph.graph.subgraph(graph.graph.vertexSet()), red)
     }
 }
 
@@ -48,13 +48,13 @@ private fun benchmarkGraphPreprocessing(graph: Graph, preprocessing: NamedReduct
 }
 
 val reductions = mapOf(
-        "mergeNeg" to mergeNeg,
-        "mergePos" to mergePos,
-        "npv" to negV,
-        "npe" to negE,
-        "cns" to cns,
-        "nvk" to nvk
-)
+        "mergeNeg" to listOf(mergeNeg),
+        "mergePos" to listOf(mergePos),
+        "npv" to listOf(negV),
+        "npe" to listOf(negE),
+        "cns" to listOf(cns),
+        "nvk" to listOf(nvk)
+).toList()
 
 fun main(args: Array<String>) {
     val nodeFile = File(args[0])
@@ -63,12 +63,7 @@ fun main(args: Array<String>) {
     val graphIO = SimpleIO(nodeFile, File(nodeFile.toString() + ".out"),
             edgeFile, File(edgeFile.toString() + ".out"))
     val graph = graphIO.read()
-    // val tests = mutableListOf<NamedReductions>()
-    val samples = sampleGraph(graph, 500, 50)
-    for (sample in samples) {
-        println("Solving sample ${sample.name}")
-        RLTSolver().solve(sample.graph)
-    }
+    benchmarkGraph(NamedGraph(graph, "test"), reductions)
 
     /* setThreads(4)
      FileReader(rulesFile).forEachLine {
