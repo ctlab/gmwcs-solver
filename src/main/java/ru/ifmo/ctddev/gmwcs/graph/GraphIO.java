@@ -8,4 +8,6 @@ public interface GraphIO {
     Graph read() throws IOException, ParseException;
 
     void write(List<Elem> elems) throws IOException;
+
+    Node nodeByName(String name);
 }

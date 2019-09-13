@@ -14,16 +14,16 @@ For example,
     
 After that you can build the project using maven:
 
-    mvn install
+    mvn install -DskipTests=true
     
 And jar file with name "gmwcs.jar" will appear in "target" directory
     
 Running
 =======
 
-To run program you should set jvm parameter java.library.path to directory of CPLEX binaries like that:
+To run program you should set jvm parameter java.library.path to directory of CPLEX binaries and specify classpath like that:
 
-    java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_sles10_4.1/ -jar gmwcs.jar
+    java -Xss4M -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_linux/ -cp /opt/ibm/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar:gmwcs.jar ru.ifmo.ctddev.gmwcs.Main
 
 See more help by using flag -h.
 
@@ -61,7 +61,7 @@ Red units in graph below - solution.
 Running sample
 ==============
 
-    java -Djava.library.path=PATH_TO_CPLEX -jar target/gmwcs.jar -n nodes -e edges
+    java -Xss4M -Djava.library.path={PATH_TO_CPLEX_BIN} -cp {PATH_TO_CPLEX_JAR}:gmwcs.jar ru.ifmo.ctddev.gmwcs.Main
     
 The output should look like this:
 ```

@@ -147,4 +147,9 @@ public class SimpleIO implements GraphIO {
             writer.write("#subnet node score\t" + sum);
         }
     }
+
+    @Override
+    public Node nodeByName(String name) {
+        return nodeMap.get(name);
+    }
 }

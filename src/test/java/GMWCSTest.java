@@ -20,7 +20,7 @@ import java.util.Random;
 import static ru.ifmo.ctddev.gmwcs.solver.Utils.sum;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class GMWCSTests {
+public class GMWCSTest {
     public static final int SEED = 20160309;
     public static final int TESTS_PER_SIZE = 300;
     public static final int MAX_SIZE = 16;
@@ -31,7 +31,7 @@ public class GMWCSTests {
     private ReferenceSolver referenceSolver;
     private Random random;
 
-    public GMWCSTests() {
+    public GMWCSTest() {
         random = new Random(SEED);
         this.solver = new BicomponentSolver(new RLTSolver());
         tests = new ArrayList<>();

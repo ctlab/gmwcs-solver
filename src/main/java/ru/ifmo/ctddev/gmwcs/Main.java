@@ -3,8 +3,15 @@ package ru.ifmo.ctddev.gmwcs;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import ru.ifmo.ctddev.gmwcs.graph.*;
+<<<<<<< HEAD
 import ru.ifmo.ctddev.gmwcs.solver.*;
 import ru.ifmo.ctddev.gmwcs.solver.preprocessing.PreprocessorKt;
+=======
+import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
+import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
+import ru.ifmo.ctddev.gmwcs.solver.Solver;
+import ru.ifmo.ctddev.gmwcs.solver.SolverException;
+>>>>>>> origin/master
 
 import java.io.File;
 import java.io.IOException;
@@ -18,20 +25,26 @@ public class Main {
         OptionParser optionParser = new OptionParser();
         optionParser.allowsUnrecognizedOptions();
         optionParser.acceptsAll(asList("h", "help"), "Print a short help message");
+        optionParser.accepts("version");
         OptionSet optionSet = optionParser.parse(args);
         optionParser.acceptsAll(asList("n", "nodes"), "Node list file").withRequiredArg().required();
         optionParser.acceptsAll(asList("e", "edges"), "Edge list file").withRequiredArg().required();
+        optionParser.accepts("root", "Root node").withRequiredArg();
         optionParser.acceptsAll(asList("m", "threads"), "Number of threads").withRequiredArg()
                 .ofType(Integer.class).defaultsTo(1);
         optionParser.acceptsAll(asList("t", "timelimit"), "Timelimit in seconds (<= 0 - unlimited)")
                 .withRequiredArg().ofType(Long.class).defaultsTo(0L);
         optionParser.acceptsAll(asList("u", "unrooted"), "Maximum share of time allocated for solving unrooted parts")
-                .withRequiredArg().ofType(Double.class).defaultsTo(1.0 / 3.0);
+                .withRequiredArg().ofType(Double.class).defaultsTo(0.3);
         optionParser.acceptsAll(asList("r", "rooted"), "Maximum share of time allocated for solving rooted parts")
-                .withRequiredArg().ofType(Double.class).defaultsTo(1.0 / 3.0);
+                .withRequiredArg().ofType(Double.class).defaultsTo(0.3);
         if (optionSet.has("h")) {
             optionParser.printHelpOn(System.out);
-            System.exit(0);
+            return null;
+        }
+        if (optionSet.has("version")) {
+            System.out.println("gmwcs-solver version " + Main.class.getPackage().getImplementationVersion());
+            return null;
         }
         try {
             optionSet = optionParser.parse(args);
@@ -39,17 +52,17 @@ public class Main {
             double rsh = (Double) optionSet.valueOf("r");
             if (ush < 0.0 || ush > 1.0 || rsh < 0.0 || rsh > 1.0) {
                 System.err.println("Share must b in range [0,1]");
-                System.exit(1);
+                return null;
             }
             if (rsh + ush > 1.0) {
                 System.err.println("Sum of shares of rooted and unrooted parts must be <= 1.0");
-                System.exit(1);
+                return null;
             }
         } catch (Exception e) {
             System.err.println(e.getMessage());
             System.err.println();
             optionParser.printHelpOn(System.err);
-            System.exit(1);
+            return null;
         }
         return optionSet;
     }
@@ -58,9 +71,12 @@ public class Main {
         OptionSet optionSet = null;
         try {
             optionSet = parseArgs(args);
+            if (optionSet == null) {
+                return;
+            }
         } catch (IOException e) {
             // We can't say anything. Error occurred while printing to stderr.
-            System.exit(2);
+            return;
         }
         long timelimit = (Long) optionSet.valueOf("timelimit");
         TimeLimit tl = new TimeLimit(timelimit <= 0 ? Double.POSITIVE_INFINITY : timelimit);
@@ -71,46 +87,32 @@ public class Main {
         File nodeFile = new File((String) optionSet.valueOf("nodes"));
         File edgeFile = new File((String) optionSet.valueOf("edges"));
         RLTSolver rltSolver = new RLTSolver();
-        BicomponentSolver solver = new BicomponentSolver(rltSolver);
-        solver.setThreadsNum(threadsNum);
-        solver.setUnrootedTL(tl);
-        solver.setRootedTL(biggestTL.subLimit(ush == 1.0 ? 0 : rsh / (1.0 - ush)));
-        solver.setTLForBiggest(biggestTL);
+        rltSolver.setThreadsNum(threadsNum);
+        Solver solver = null;
+        if (!optionSet.has("root")) {
+            BicomponentSolver comp_solver = new BicomponentSolver(rltSolver);
+            comp_solver.setUnrootedTL(tl);
+            comp_solver.setRootedTL(biggestTL.subLimit(ush == 1.0 ? 0 : rsh / (1.0 - ush)));
+            comp_solver.setTLForBiggest(biggestTL);
+            solver = comp_solver;
+        } else {
+            solver = rltSolver;
+            solver.setTimeLimit(tl);
+        }
         GraphIO graphIO = new SimpleIO(nodeFile, new File(nodeFile.toString() + ".out"),
                 edgeFile, new File(edgeFile.toString() + ".out"));
         try {
             Graph graph = graphIO.read();
-            System.out.print("Graph with " + graph.vertexSet().size() + " nodes ");
-            System.out.println("and " + graph.edgeSet().size() + " edges");
-            long before = System.currentTimeMillis();
-            List<Elem> elems = solver.solve(graph);
-            long delta = System.currentTimeMillis() - before;
-            Graph res = new Graph();
-            for (Elem elem : elems) {
-                if (elem instanceof Edge) {
-                    Edge e = (Edge) elem;
-                    Node u = graph.getEdgeSource(e);
-                    Node v = graph.getEdgeTarget(e);
-                    if (!res.containsVertex(u)) {
-                        res.addVertex(u);
-                    }
-                    if (!res.containsVertex(v)) {
-                        res.addVertex(v);
-                    }
-                    if (!res.neighborListOf(u).contains(v)) {
-                        res.addEdge(u, v, e);
-                    }
+            if (optionSet.has("root")) {
+                Node root = graphIO.nodeByName((String) optionSet.valueOf("root"));
+                if (root == null) {
+                    System.err.println("Chosen root node is not presented in the graph");
+                    return;
                 }
+                rltSolver.setRoot(root);
             }
-            if (solver.isSolvedToOptimality()) {
-                System.out.println("SOLVED TO OPTIMALITY");
-            }
-            System.out.println(elems.stream().mapToDouble(Elem::getWeight).sum());
-            System.out.println("time:" + delta);
-            PreprocessorKt.preprocess(res);
-            // PreprocessorKt.findPosCycles(res);
-            // assert(res.edgeSet().size() == res.vertexSet().size() - 1);
-            graphIO.write(elems);
+            List<Elem> units = solver.solve(graph);
+            graphIO.write(units);
         } catch (ParseException e) {
             System.err.println("Couldn't parse input files: " + e.getMessage() + " " + e.getErrorOffset());
         } catch (SolverException e) {
