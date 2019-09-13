@@ -3,15 +3,10 @@ package ru.ifmo.ctddev.gmwcs;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import ru.ifmo.ctddev.gmwcs.graph.*;
-<<<<<<< HEAD
-import ru.ifmo.ctddev.gmwcs.solver.*;
-import ru.ifmo.ctddev.gmwcs.solver.preprocessing.PreprocessorKt;
-=======
 import ru.ifmo.ctddev.gmwcs.solver.BicomponentSolver;
 import ru.ifmo.ctddev.gmwcs.solver.RLTSolver;
 import ru.ifmo.ctddev.gmwcs.solver.Solver;
 import ru.ifmo.ctddev.gmwcs.solver.SolverException;
->>>>>>> origin/master
 
 import java.io.File;
 import java.io.IOException;

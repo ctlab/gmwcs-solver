@@ -75,7 +75,7 @@ val leaves = ReductionSequence(
 )
 
 // val allSteps: Reductions = listOf(isolated, mergeNeg, mergePos)
-val allSteps: Reductions = listOf(isolated, mergeNeg, mergePos, negE, negV, cns)
+val allSteps: Reductions = listOf(isolated, mergeNeg, mergePos)
 
 fun isolatedVertices(graph: Graph, toRemove: MutableNodeSet = mutableSetOf()): NodeSet {
     return graph.vertexSet().filterTo(toRemove, { it.weight <= 0 && graph.degreeOf(it) == 0 })

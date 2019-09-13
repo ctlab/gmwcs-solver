@@ -6,15 +6,10 @@
 
     <groupId>ctlab</groupId>
     <artifactId>gmwcs-solver</artifactId>
-<<<<<<< HEAD
     <version>1.0</version>
     <properties>
         <kotlin.version>1.2.10</kotlin.version>
     </properties>
-=======
-    <version>0.9.0</version>
->>>>>>> origin/master
-
     <build>
         <plugins>
             <plugin>
@@ -23,8 +18,6 @@
                     <source>1.8</source>
                     <target>1.8</target>
                 </configuration>
-<<<<<<< HEAD
-                <version>2.3.2</version>
                 <executions>
                     <execution>
                         <id>default-compile</id>
@@ -49,9 +42,7 @@
                         </goals>
                     </execution>
                 </executions>
-=======
                 <version>3.7.0</version>
->>>>>>> origin/master
             </plugin>
 
             <plugin>
@@ -82,7 +73,6 @@
                     </execution>
                 </executions>
             </plugin>
-<<<<<<< HEAD
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
@@ -112,27 +102,6 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>compile</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>testCompile</id>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-=======
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.19.1</version>
                 <configuration>
@@ -142,7 +111,6 @@
                         -Xms512m
                     </argLine>
                 </configuration>
->>>>>>> origin/master
             </plugin>
         </plugins>
     </build>
@@ -151,12 +119,8 @@
         <dependency>
             <groupId>com.ibm</groupId>
             <artifactId>cplex</artifactId>
-<<<<<<< HEAD
-            <version>[12.6.3,12.7.4)</version>
-=======
             <version>[12.6.3,)</version>
             <scope>provided</scope>
->>>>>>> origin/master
         </dependency>
         <dependency>
             <groupId>org.jgrapht</groupId>

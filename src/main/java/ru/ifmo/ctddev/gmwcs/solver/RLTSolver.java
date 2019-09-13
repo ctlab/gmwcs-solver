@@ -80,7 +80,7 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             addConstraints();
             addObjective();
             maxSizeConstraints();
-            initMstWeights();
+            // initMstWeights();
             long timeBefore = System.currentTimeMillis();
             if (root == null) {
                 breakRootSymmetry();
@@ -92,10 +92,10 @@ public class RLTSolver extends IloVarHolder implements RootedSolver {
             if (!suppressOutput) {
                 cplex.use(new LogCallback());
             }
-            if (graph.vertexSet().size() >= 25) {
+            /*if (graph.vertexSet().size() >= 25) {
                 cplex.use(new MstCallback(0));
                 tryMst(this);
-            }
+            }*/
             boolean solFound = cplex.solve();
             tl.spend(Math.min(tl.getRemainingTime(),
                     (System.currentTimeMillis() - timeBefore) / 1000.0));
